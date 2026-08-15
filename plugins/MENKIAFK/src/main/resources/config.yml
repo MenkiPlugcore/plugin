@@ -1,0 +1,82 @@
+# ==========================================================
+# MENKIAFK v1.1.0 Universal - MENKIESTES
+# Paper 1.21.11 -> 26.2 | Spigot 1.21.11 | bytecode Java 21
+# ==========================================================
+
+prefix: "&8[&6AFK&8]"
+
+# Manual AFK
+manual-afk:
+  max-reason-length: 80
+  cooldown-seconds: 8
+  # Paksa /afk MENKIAFK walau EssentialsX juga mendaftarkan /afk.
+  override-command-conflict: true
+
+# Auto AFK hanya mengecek player secara periodik.
+# Tidak ada penulisan database pada movement/chat.
+auto-afk:
+  enabled: true
+  timeout-seconds: 300
+  check-interval-seconds: 20
+  reason: "Tidak aktif selama %minutes% menit"
+  ignored-worlds: []
+
+# Aktivitas yang mengembalikan player dari AFK dan mereset idle timer.
+return-on:
+  move: true
+  rotate: true
+  chat: true
+  command: true
+  interact: true
+  inventory-click: true
+  death: true
+  teleport: false
+
+# Broadcast dibuat satu baris supaya tidak memenuhi chat.
+broadcast:
+  on-afk: true
+  on-return: true
+
+mention:
+  enabled: true
+  # Berapa banyak notifikasi AFK maksimal dari satu chat.
+  max-notifications-per-message: 3
+
+private-message:
+  enabled: true
+  # Plugin hanya memberi warning, command asli tetap diteruskan ke EssentialsX/plugin chat.
+  command-aliases: ["msg", "tell", "w", "whisper", "pm", "m"]
+  # Simpan sementara pesan yang dikirim saat target AFK dan tampilkan saat target kembali.
+  # Hanya RAM, hilang saat logout/restart.
+  remember-while-afk: true
+  max-remembered: 10
+
+placeholder:
+  active-text: "Aktif"
+  afk-text: "AFK"
+  no-reason-text: "-"
+  manual-text: "Manual"
+  auto-text: "Otomatis"
+
+messages:
+  no-permission: "{@prefix} &cKamu tidak punya izin untuk menggunakan fitur ini."
+  reason-required: "{@prefix} &cMasukkan alasan AFK. &7Contoh: &f/afk makan dulu"
+  reason-too-long: "{@prefix} &cAlasan AFK maksimal &f%max% &ckarakter."
+  cooldown: "{@prefix} &eTunggu &f%seconds%s &esebelum AFK lagi."
+  afk-broadcast: "{@prefix} &e%player% &7sekarang &6AFK &8— &7%reason%"
+  auto-afk-broadcast: "{@prefix} &e%player% &7otomatis &6AFK &8— &7%reason%"
+  return-broadcast: "{@prefix} &f%player% &atelah kembali &8(&7AFK %duration%&8)"
+  not-afk: "{@prefix} &f%player% &7sedang tidak AFK."
+  player-not-found: "{@prefix} &cPlayer &f%player% &ctidak ditemukan."
+  mention-warning: "&6⚠ &f%player% &esedang AFK &8— &7%reason% &8(&f%duration%&8)"
+  pm-warning: "&6⚠ &f%player% &esedang AFK &8— &7%reason% &8(&f%duration%&8). &7Pesan tetap dikirim."
+  inbox-header: "{@prefix} &eAda &f%count% &epesan yang dikirim saat kamu AFK:"
+  inbox-line: "&8» &f%sender%&8: &7%message%"
+  reload: "{@prefix} &aKonfigurasi berhasil dimuat ulang."
+  status-header: "&8&m--------------------------------"
+  status-title: "&6&lMENKI AFK STATUS"
+  status-player: "&7Player: &f%player%"
+  status-afk: "&7AFK: %status%"
+  status-type: "&7Tipe: &f%type%"
+  status-reason: "&7Alasan: &f%reason%"
+  status-duration: "&7Durasi: &f%duration%"

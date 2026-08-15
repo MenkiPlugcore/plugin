@@ -1,0 +1,34 @@
+name: MENKIAFK
+version: '1.1.0'
+main: store.menkiestes.menkiafk.MenkiAfkPlugin
+api-version: '1.21.11'
+author: MENKIESTES
+description: Universal lightweight premium AFK system for MENKI SMP.
+softdepend: [PlaceholderAPI, Essentials]
+
+commands:
+  afk:
+    description: Mengaktifkan atau menonaktifkan status AFK.
+    usage: /afk <alasan>
+    permission: menki.afk
+  afkcheck:
+    description: Mengecek status AFK diri sendiri atau player lain.
+    usage: /afkcheck [player]
+  menkiafk:
+    description: Admin command MENKIAFK.
+    usage: /menkiafk <reload|status>
+    permission: menki.afk.admin
+
+permissions:
+  menki.afk:
+    description: Menggunakan command /afk.
+    default: true
+  menki.afk.admin:
+    description: Mengecek player lain dan mengelola MENKIAFK.
+    default: op
+  menki.afk.auto.bypass:
+    description: Tidak terkena Auto AFK.
+    default: op
+  menki.afk.color:
+    description: Menggunakan kode warna & pada alasan AFK.
+    default: op
