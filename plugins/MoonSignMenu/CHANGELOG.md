@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.3.0
+
+- Added Bedrock-native EssentialsX Home Manager (`type: homes`).
+- Home Manager shows saved homes and the effective EssentialsX home limit, including unlimited home permission.
+- Added click-only Set Home with manual home-name input, existing-home actions, teleport, delete, and delete confirmation.
+- Added Bedrock-native transfer flow (`type: pay`): select an online player, type the amount manually, then confirm payment.
+- Added Indonesian-friendly amount parsing such as `10000` and `10.000`.
+- Added Bedrock-native AxTrade flow (`type: trade`) with Send, Accept, Deny, Toggle Requests, player picker, and Back navigation.
+- Added configurable EssentialsX, pay, and AxTrade command templates under `integrations`.
+- Added Java fallback commands for the new special button types.
+- Added automatic v1.2 -> v1.3 config migration for the default Set Home, Transfer, and Barter buttons.
+- Added EssentialsX API as a provided dependency and `Essentials` / `AxTrade` soft dependencies.
+
 ## 1.2.0
 
 - Reworked the main menu into a fully config-driven button system.
