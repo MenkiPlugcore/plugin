@@ -1,4 +1,4 @@
-# MoonSignMenu v1.0.0
+# MoonSignMenu v1.1.0
 prefix: "&8[&dMOONSIGN&8] &r"
 
 teleport:
@@ -10,6 +10,41 @@ teleport:
     request: "BLOCK_NOTE_BLOCK_PLING"
     accepted: "ENTITY_PLAYER_LEVELUP"
     denied: "BLOCK_NOTE_BLOCK_BASS"
+
+# Native Bedrock form icons. These use vanilla Bedrock texture paths,
+# so a custom resource pack is not required by default.
+bedrock-icons:
+  enabled: true
+  tpa: "textures/items/ender_pearl"
+  tpahere: "textures/items/lead"
+  warp: "textures/items/compass_item"
+  pwarp: "textures/items/map_filled"
+  sethome: "textures/items/bed_red"
+  land: "textures/items/map_empty"
+  transfer: "textures/items/paper"
+  bank: "textures/items/gold_ingot"
+  team: "textures/items/iron_sword"
+  shop: "textures/items/nether_star"
+  playershop: "textures/items/name_tag"
+  report: "textures/items/book_writable"
+  barter: "textures/items/lead"
+  toggle: "textures/items/lever"
+  player: "textures/items/name_tag"
+  back: "textures/items/arrow"
+  close: "textures/items/barrier"
+
+# Member Book is automatically given to players and opens /menu on right click.
+member-book:
+  enabled: true
+  give-on-join: true
+  give-delay-ticks: 10
+  hotbar-slot: 8
+  prevent-drop: true
+  material: "BOOK"
+  name: "&d&lMOONSIGN &fMember Book"
+  lore:
+    - "&7Klik kanan untuk membuka Menu Member."
+    - "&8Item menu pribadi MOONSIGN."
 
 # Commands used by buttons outside the built-in TP system.
 # Use an empty string to disable a button action.
@@ -50,3 +85,5 @@ messages:
   toggle-off: "&cPermintaan teleport sekarang NONAKTIF."
   no-other-players: "&eTidak ada player lain yang sedang online."
   action-disabled: "&eFitur ini belum diaktifkan di config MoonSignMenu."
+  member-book-cannot-drop: "&eMember Book tidak dapat dibuang."
+  member-book-inventory-full: "&eInventory penuh. Kosongkan satu slot agar Member Book bisa diberikan."
