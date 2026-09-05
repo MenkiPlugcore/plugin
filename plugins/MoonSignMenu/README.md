@@ -1,6 +1,6 @@
-# MoonSignMenu v1.1.0
+# MoonSignMenu v1.2.0
 
-Plugin Paper untuk MOONSIGN yang memberikan **native Bedrock Forms** melalui Floodgate dan **inventory GUI fallback** untuk player Java.
+Plugin Paper untuk MOONSIGN yang memberikan native Bedrock Forms melalui Floodgate, inventory GUI fallback untuk Java, Member Book, internal TPA, dan sekarang menu yang sepenuhnya dapat diatur dari `config.yml`.
 
 ## Target
 
@@ -8,21 +8,180 @@ Plugin Paper untuk MOONSIGN yang memberikan **native Bedrock Forms** melalui Flo
 - Java 21
 - Geyser + Floodgate untuk native Bedrock UI
 
-## Fitur v1.1.0
+## Fitur utama
 
-- `/menu` tetap tersedia sebagai fallback.
-- `MOONSIGN Member Book` otomatis diberikan ke player.
-- Klik kanan Member Book untuk membuka Menu Member tanpa mengetik command.
-- Member Book otomatis dikembalikan jika hilang saat join/respawn.
-- Member Book dapat dibuat tidak bisa dibuang.
-- Bedrock native member menu menggunakan icon gambar dari texture vanilla Bedrock, bukan emoji teks.
-- Tidak membutuhkan custom resource pack untuk icon bawaan.
-- Menu TP Bedrock memakai halaman SimpleForm ber-icon dengan tombol `Kembali`.
-- Java inventory GUI juga memiliki tombol `Kembali` pada submenu TP.
-- Internal `/tpa`, `/tpahere`, `/tpaccept`, `/tpdeny`, dan `/tptoggle`.
-- Incoming request Bedrock modal: TERIMA / TOLAK.
-- Request expiry, cooldown, persistent toggle, optional cross-world block, dan sound feedback.
-- Tombol menu lain menjalankan command yang dapat diatur dari `config.yml`.
+- `/menu` atau klik kanan `MOONSIGN Member Book` untuk membuka menu.
+- Native Bedrock button icons tanpa emoji teks.
+- Java inventory GUI fallback.
+- Built-in TPA / TPAHere / accept / deny / toggle.
+- Tombol `Kembali` pada submenu internal.
+- Menu utama dan submenu config-driven.
+- Tambah/hapus/edit/reorder tombol tanpa compile ulang.
+- Button types: `command`, `teleport`, `submenu`, `close`.
+- Command dapat dijalankan sebagai player atau console.
+- Permission per tombol.
+- Bedrock icon path dan Java material per tombol.
+- Java menu pagination otomatis bila tombol banyak.
+- `/menu reload` untuk menerapkan perubahan config tanpa restart.
+
+## Install / Upgrade
+
+1. Pastikan server memakai Java 21 + Paper 1.21.11.
+2. Install Geyser-Spigot dan Floodgate-Spigot untuk native UI Bedrock.
+3. Ganti JAR lama dengan `MoonSignMenu-1.2.0.jar`.
+4. Restart server satu kali untuk migrasi config.
+5. Setelah itu perubahan tombol dapat diterapkan dengan `/menu reload`.
+
+Saat upgrade dari v1.1, nilai `menu-actions` lama dan icon main menu lama akan dipindahkan ke struktur menu baru bila config belum memiliki `menu.main.buttons`.
+
+## Contoh tombol command
+
+```yaml
+menu:
+  main:
+    buttons:
+      team:
+        enabled: true
+        name: "Team"
+        type: "command"
+        command: "team"
+        executor: "player"
+        order: 80
+        icon: "textures/items/iron_sword"
+        java-material: "IRON_SWORD"
+        permission: ""
+
+      shop:
+        enabled: true
+        name: "Shop"
+        type: "command"
+        command: "shop"
+        executor: "player"
+        order: 90
+        icon: "textures/items/nether_star"
+        java-material: "NETHER_STAR"
+        permission: ""
+```
+
+Untuk UltimateTeams atau DGShop, cukup ubah `command` ke command pembuka GUI plugin yang dipakai server.
+
+## Menambah tombol baru
+
+Tambahkan section baru di `menu.main.buttons`:
+
+```yaml
+      enderchest:
+        enabled: true
+        name: "Ender Chest"
+        type: "command"
+        command: "ec"
+        executor: "player"
+        order: 105
+        icon: "textures/blocks/ender_chest_front"
+        java-material: "ENDER_CHEST"
+        permission: ""
+        lore:
+          - "&7Buka Ender Chest milikmu."
+```
+
+`order` menentukan urutan tombol. `enabled: false` menyembunyikan tombol.
+
+## Submenu
+
+Buat tombol pembuka submenu:
+
+```yaml
+      player-menu:
+        enabled: true
+        name: "Menu Player"
+        type: "submenu"
+        submenu: "player"
+        order: 130
+        icon: "textures/items/name_tag"
+        java-material: "PLAYER_HEAD"
+```
+
+Lalu definisikan submenu:
+
+```yaml
+menu:
+  submenus:
+    player:
+      title: "&dMenu Player"
+      content: "&7Fitur pribadi player."
+      back-menu: "main"
+      buttons:
+        homes:
+          enabled: true
+          name: "Homes"
+          type: "command"
+          command: "homes"
+          executor: "player"
+          order: 10
+          icon: "textures/items/bed_red"
+          java-material: "RED_BED"
+```
+
+Submenu MoonSignMenu otomatis mendapatkan tombol `Kembali`. GUI yang dibuka oleh plugin eksternal tetap mengikuti GUI plugin tersebut dan tidak dapat disisipi tombol Back oleh MoonSignMenu.
+
+## Permission tombol
+
+```yaml
+      vipshop:
+        enabled: true
+        name: "VIP Shop"
+        type: "command"
+        command: "vipshop"
+        permission: "moonsign.vipshop"
+```
+
+Dengan `menu.hide-buttons-without-permission: true`, player tanpa permission tidak akan melihat tombol tersebut.
+
+## Command executor dan placeholder
+
+```yaml
+      daily:
+        enabled: true
+        name: "Daily Reward"
+        type: "command"
+        command: "reward give %player% daily"
+        executor: "console"
+```
+
+Placeholder command:
+
+- `%player%`
+- `%uuid%`
+- `%world%`
+
+## Command
+
+| Command | Fungsi |
+|---|---|
+| `/menu` | Buka Menu Member |
+| `/menu reload` | Reload `config.yml` tanpa restart |
+| `/tpa <player>` | Minta teleport ke player |
+| `/tpahere <player>` | Minta player teleport ke kamu |
+| `/tpaccept` | Terima request |
+| `/tpdeny` | Tolak request |
+| `/tptoggle` | Matikan/aktifkan incoming request |
+
+## Permission
+
+Player default:
+
+- `moonsignmenu.menu`
+- `moonsignmenu.tpa`
+- `moonsignmenu.tpahere`
+- `moonsignmenu.tpaccept`
+- `moonsignmenu.tpdeny`
+- `moonsignmenu.tptoggle`
+
+Admin / bypass:
+
+- `moonsignmenu.admin.reload` (default OP)
+- `moonsignmenu.bypass.cooldown` (default OP)
+- `moonsignmenu.bypass.disabled` (default OP)
 
 ## Build
 
@@ -33,99 +192,5 @@ mvn clean package
 Output:
 
 ```text
-target/MoonSignMenu-1.1.0.jar
+target/MoonSignMenu-1.2.0.jar
 ```
-
-GitHub Actions pada repository MenkiPlugcore/plugin melakukan compile-check dan mengunggah artifact JAR.
-
-## Install / Upgrade
-
-1. Pastikan server memakai Java 21 + Paper 1.21.11.
-2. Install Geyser-Spigot dan Floodgate-Spigot untuk native UI Bedrock.
-3. Ganti JAR lama dengan `MoonSignMenu-1.1.0.jar` di folder `plugins/`.
-4. Restart server.
-5. Config lama akan menerima key default baru untuk icon dan Member Book.
-6. Player akan mendapatkan Member Book otomatis jika belum memilikinya.
-
-## Command
-
-| Command | Fungsi |
-|---|---|
-| `/menu` | Buka menu member secara manual |
-| `/tpa <player>` | Minta teleport ke player |
-| `/tpahere <player>` | Minta player teleport ke kamu |
-| `/tpaccept` | Terima request |
-| `/tpdeny` | Tolak request |
-| `/tptoggle` | Matikan/aktifkan incoming request |
-
-## Member Book
-
-```yaml
-member-book:
-  enabled: true
-  give-on-join: true
-  give-delay-ticks: 10
-  hotbar-slot: 8
-  prevent-drop: true
-  material: "BOOK"
-  name: "&d&lMOONSIGN &fMember Book"
-  lore:
-    - "&7Klik kanan untuk membuka Menu Member."
-    - "&8Item menu pribadi MOONSIGN."
-```
-
-`hotbar-slot` menggunakan index 0-8. Default `8` berarti slot hotbar paling kanan.
-
-## Icon Bedrock
-
-SimpleForm Bedrock mendukung image path. MoonSignMenu menggunakan texture vanilla client secara default:
-
-```yaml
-bedrock-icons:
-  enabled: true
-  tpa: "textures/items/ender_pearl"
-  warp: "textures/items/compass_item"
-  pwarp: "textures/items/map_filled"
-  sethome: "textures/items/bed_red"
-  bank: "textures/items/gold_ingot"
-  back: "textures/items/arrow"
-```
-
-Karena memakai texture bawaan Bedrock, player tidak perlu mengunduh resource pack tambahan untuk konfigurasi default. Path dapat diganti nanti jika server menggunakan custom Bedrock resource pack.
-
-## Permission
-
-Permission player default aktif:
-
-- `moonsignmenu.menu`
-- `moonsignmenu.tpa`
-- `moonsignmenu.tpahere`
-- `moonsignmenu.tpaccept`
-- `moonsignmenu.tpdeny`
-- `moonsignmenu.tptoggle`
-
-Bypass:
-
-- `moonsignmenu.bypass.cooldown` (default OP)
-- `moonsignmenu.bypass.disabled` (default OP)
-
-## Integrasi tombol lain
-
-Edit `plugins/MoonSignMenu/config.yml` di server:
-
-```yaml
-menu-actions:
-  warp: "warp"
-  pwarp: "pwarp"
-  sethome: "sethome"
-  land: "claimslist"
-  transfer: "pay"
-  bank: "bank"
-  team: "team"
-  shop: "shop"
-  playershop: "ah"
-  report: "report"
-  barter: "trade"
-```
-
-Kosongkan command jika fitur belum dipakai.

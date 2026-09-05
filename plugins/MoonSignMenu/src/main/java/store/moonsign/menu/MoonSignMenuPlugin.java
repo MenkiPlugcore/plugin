@@ -14,10 +14,14 @@ import store.moonsign.menu.command.TeleportCommands;
 import store.moonsign.menu.form.BedrockFormService;
 import store.moonsign.menu.gui.JavaMenuService;
 import store.moonsign.menu.item.MemberBookService;
+import store.moonsign.menu.menu.MenuConfigService;
+import store.moonsign.menu.menu.MenuConfigService.MenuButton;
 import store.moonsign.menu.tp.TeleportRequestManager;
 import store.moonsign.menu.tp.ToggleStore;
 import store.moonsign.menu.util.Colors;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
@@ -25,16 +29,19 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
     private BedrockFormService formService;
     private JavaMenuService javaMenuService;
     private MemberBookService memberBookService;
+    private MenuConfigService menuConfigService;
     private NamespacedKey playerKey;
+    private NamespacedKey buttonKey;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        getConfig().options().copyDefaults(true);
-        saveConfig();
+        migrateAndMergeConfig();
         getDataFolder().mkdirs();
         playerKey = new NamespacedKey(this, "target-player");
+        buttonKey = new NamespacedKey(this, "menu-button");
 
+        menuConfigService = new MenuConfigService(this);
         ToggleStore toggleStore = new ToggleStore(this);
         requestManager = new TeleportRequestManager(this, toggleStore);
         javaMenuService = new JavaMenuService(this);
@@ -57,11 +64,42 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(javaMenuService, this);
         Bukkit.getPluginManager().registerEvents(memberBookService, this);
         memberBookService.giveToOnlinePlayers();
-        getLogger().info("MoonSignMenu v1.1.0 enabled.");
+        getLogger().info("MoonSignMenu v1.2.0 enabled.");
+    }
+
+    private void migrateAndMergeConfig() {
+        boolean hadDynamicMenu = getConfig().isConfigurationSection("menu.main.buttons");
+        Map<String, String> legacyCommands = new HashMap<>();
+        Map<String, String> legacyIcons = new HashMap<>();
+        String[] legacyKeys = {"warp", "pwarp", "sethome", "land", "transfer", "bank", "team", "shop", "playershop", "report", "barter"};
+
+        if (!hadDynamicMenu) {
+            for (String key : legacyKeys) {
+                String command = getConfig().getString("menu-actions." + key);
+                if (command != null) legacyCommands.put(key, command);
+                String icon = getConfig().getString("bedrock-icons." + key);
+                if (icon != null) legacyIcons.put(key, icon);
+            }
+        }
+
+        getConfig().options().copyDefaults(true);
+        if (!hadDynamicMenu) {
+            for (Map.Entry<String, String> entry : legacyCommands.entrySet()) {
+                getConfig().set("menu.main.buttons." + entry.getKey() + ".command", entry.getValue());
+            }
+            for (Map.Entry<String, String> entry : legacyIcons.entrySet()) {
+                getConfig().set("menu.main.buttons." + entry.getKey() + ".icon", entry.getValue());
+            }
+        }
+        saveConfig();
     }
 
     private void registerCommands() {
-        Objects.requireNonNull(getCommand("menu")).setExecutor(new MenuCommand(this));
+        MenuCommand menu = new MenuCommand(this);
+        PluginCommand menuCommand = Objects.requireNonNull(getCommand("menu"));
+        menuCommand.setExecutor(menu);
+        menuCommand.setTabCompleter(menu);
+
         TeleportCommands tp = new TeleportCommands(this);
         for (String commandName : new String[]{"tpa", "tpahere", "tpaccept", "tpdeny", "tptoggle"}) {
             PluginCommand command = Objects.requireNonNull(getCommand(commandName));
@@ -76,6 +114,10 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
         } else {
             javaMenuService.showMain(player);
         }
+    }
+
+    public void reloadMoonSignConfig() {
+        reloadConfig();
     }
 
     public TeleportRequestManager requests() {
@@ -94,17 +136,48 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
         return memberBookService;
     }
 
+    public MenuConfigService menus() {
+        return menuConfigService;
+    }
+
     public NamespacedKey playerKey() {
         return playerKey;
     }
 
-    public void executeMenuAction(Player player, String actionKey) {
-        String command = getConfig().getString("menu-actions." + actionKey, "");
+    public NamespacedKey buttonKey() {
+        return buttonKey;
+    }
+
+    public void executeMenuCommand(Player player, MenuButton button) {
+        if (!menuConfigService.canUse(player, button)) {
+            message(player, "no-permission");
+            return;
+        }
+        String command = button.command();
         if (command == null || command.isBlank()) {
             message(player, "action-disabled");
             return;
         }
-        player.performCommand(command.startsWith("/") ? command.substring(1) : command);
+
+        command = command
+                .replace("%player%", player.getName())
+                .replace("%uuid%", player.getUniqueId().toString())
+                .replace("%world%", player.getWorld().getName());
+        if (command.startsWith("/")) command = command.substring(1);
+
+        String executor = button.executor() == null ? "player" : button.executor().trim();
+        if (executor.equalsIgnoreCase("console")) {
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+        } else {
+            player.performCommand(command);
+        }
+    }
+
+    public String formatMenuText(String value, Player player) {
+        if (value == null) return "";
+        return Colors.legacy(value
+                .replace("%player%", player.getName())
+                .replace("%world%", player.getWorld().getName()));
     }
 
     public void message(Player player, String key, String... replacements) {

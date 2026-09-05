@@ -3,11 +3,16 @@ package store.moonsign.menu.command;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import store.moonsign.menu.MoonSignMenuPlugin;
+import store.moonsign.menu.util.Colors;
 
-public final class MenuCommand implements CommandExecutor {
+import java.util.List;
+
+public final class MenuCommand implements CommandExecutor, TabCompleter {
     private final MoonSignMenuPlugin plugin;
 
     public MenuCommand(MoonSignMenuPlugin plugin) {
@@ -17,11 +22,32 @@ public final class MenuCommand implements CommandExecutor {
     @Override
     public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
                              @NotNull String label, @NotNull String[] args) {
+        if (args.length > 0 && args[0].equalsIgnoreCase("reload")) {
+            if (!sender.hasPermission("moonsignmenu.admin.reload")) {
+                if (sender instanceof Player player) plugin.message(player, "no-permission");
+                else sender.sendMessage("You do not have permission.");
+                return true;
+            }
+            plugin.reloadMoonSignConfig();
+            if (sender instanceof Player player) plugin.message(player, "config-reloaded");
+            else sender.sendMessage(Colors.legacy("&aMoonSignMenu config reloaded."));
+            return true;
+        }
+
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("This command is player-only.");
+            sender.sendMessage("This command is player-only. Use /menu reload to reload the config.");
             return true;
         }
         plugin.openMenu(player);
         return true;
+    }
+
+    @Override
+    public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
+                                                 @NotNull String alias, @NotNull String[] args) {
+        if (args.length == 1 && sender.hasPermission("moonsignmenu.admin.reload")) {
+            if ("reload".startsWith(args[0].toLowerCase())) return List.of("reload");
+        }
+        return List.of();
     }
 }

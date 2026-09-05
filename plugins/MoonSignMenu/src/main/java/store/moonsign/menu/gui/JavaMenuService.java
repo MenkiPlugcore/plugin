@@ -12,12 +12,22 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
 import store.moonsign.menu.MoonSignMenuPlugin;
+import store.moonsign.menu.menu.MenuConfigService.MenuButton;
+import store.moonsign.menu.menu.MenuConfigService.MenuDefinition;
 import store.moonsign.menu.tp.TeleportMode;
+import store.moonsign.menu.util.Colors;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public final class JavaMenuService implements Listener {
+    private static final int PAGE_SIZE = 45;
+    private static final String NAV_BACK = "__back";
+    private static final String NAV_PREVIOUS = "__previous";
+    private static final String NAV_NEXT = "__next";
+
     private final MoonSignMenuPlugin plugin;
 
     public JavaMenuService(MoonSignMenuPlugin plugin) {
@@ -25,65 +35,101 @@ public final class JavaMenuService implements Listener {
     }
 
     public void showMain(Player player) {
-        MenuHolder holder = new MenuHolder(MenuHolder.Type.MAIN, null, 27, "MOONSIGN • Menu Member");
-        Inventory inv = holder.getInventory();
-        inv.setItem(10, item(Material.ENDER_EYE, "Minta TP"));
-        inv.setItem(11, item(Material.ENDER_PEARL, "Warp"));
-        inv.setItem(12, item(Material.OAK_DOOR, "Player Warp"));
-        inv.setItem(13, item(Material.RED_BED, "Set Home"));
-        inv.setItem(14, item(Material.GRASS_BLOCK, "Tanah"));
-        inv.setItem(15, item(Material.EMERALD, "Transfer"));
-        inv.setItem(16, item(Material.GOLD_INGOT, "Bank"));
-        inv.setItem(19, item(Material.SHIELD, "Klan / Team"));
-        inv.setItem(20, item(Material.CHEST, "Toko"));
-        inv.setItem(21, item(Material.BARREL, "Player Shop"));
-        inv.setItem(22, item(Material.WRITABLE_BOOK, "Lapor"));
-        inv.setItem(23, item(Material.AMETHYST_SHARD, "Barter"));
-        player.openInventory(inv);
+        showConfiguredMenu(player, "main", 0);
+    }
+
+    public void showConfiguredMenu(Player player, String menuId, int requestedPage) {
+        MenuDefinition menu = plugin.menus().getMenu(menuId);
+        if (menu == null) {
+            plugin.message(player, "menu-not-found", "%menu%", menuId == null ? "main" : menuId);
+            if (!"main".equalsIgnoreCase(menuId)) showMain(player);
+            return;
+        }
+
+        List<MenuButton> buttons = plugin.menus().visibleButtons(menu, player);
+        int totalPages = Math.max(1, (buttons.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        int page = Math.max(0, Math.min(requestedPage, totalPages - 1));
+        int start = page * PAGE_SIZE;
+        int end = Math.min(buttons.size(), start + PAGE_SIZE);
+        List<MenuButton> pageButtons = buttons.subList(start, end);
+
+        boolean navigationRow = !menu.id().equals("main") || totalPages > 1;
+        int contentRows = Math.max(1, (pageButtons.size() + 8) / 9);
+        int size = Math.min(54, (contentRows + (navigationRow ? 1 : 0)) * 9);
+
+        String title = plugin.formatMenuText(menu.title(), player);
+        MenuHolder holder = new MenuHolder(MenuHolder.Type.CONFIG, null, menu.id(), page, size, title);
+        Inventory inventory = holder.getInventory();
+
+        int slot = 0;
+        for (MenuButton button : pageButtons) {
+            inventory.setItem(slot++, configuredItem(button, player));
+        }
+
+        if (navigationRow) {
+            int navBase = size - 9;
+            if (page > 0) inventory.setItem(navBase, navigationItem(Material.ARROW, "Halaman Sebelumnya", NAV_PREVIOUS));
+            if (!menu.id().equals("main")) inventory.setItem(navBase + 4, navigationItem(Material.BARRIER, "Kembali", NAV_BACK));
+            if (page < totalPages - 1) inventory.setItem(navBase + 8, navigationItem(Material.ARROW, "Halaman Berikutnya", NAV_NEXT));
+        }
+
+        player.openInventory(inventory);
     }
 
     public void showPlayerSelect(Player player) {
+        showPlayerSelect(player, "main", 0);
+    }
+
+    private void showPlayerSelect(Player player, String returnMenuId, int requestedPage) {
         List<? extends Player> players = Bukkit.getOnlinePlayers().stream()
                 .filter(other -> !other.getUniqueId().equals(player.getUniqueId()))
                 .toList();
         if (players.isEmpty()) {
             plugin.message(player, "no-other-players");
-            showMain(player);
+            showConfiguredMenu(player, returnMenuId, 0);
             return;
         }
 
-        int visiblePlayers = Math.min(players.size(), 45);
+        int totalPages = Math.max(1, (players.size() + PAGE_SIZE - 1) / PAGE_SIZE);
+        int page = Math.max(0, Math.min(requestedPage, totalPages - 1));
+        int start = page * PAGE_SIZE;
+        int end = Math.min(players.size(), start + PAGE_SIZE);
+        int visiblePlayers = end - start;
         int playerRows = Math.max(1, (visiblePlayers + 8) / 9);
         int size = Math.min(54, (playerRows + 1) * 9);
-        MenuHolder holder = new MenuHolder(MenuHolder.Type.PLAYER_SELECT, null, size, "Pilih Player");
-        Inventory inv = holder.getInventory();
-        int maxPlayerSlots = size - 9;
+
+        MenuHolder holder = new MenuHolder(MenuHolder.Type.PLAYER_SELECT, null, returnMenuId, page, size, "Pilih Player");
+        Inventory inventory = holder.getInventory();
         int slot = 0;
-        for (Player target : players) {
-            if (slot >= maxPlayerSlots) break;
+        for (int i = start; i < end; i++) {
+            Player target = players.get(i);
             ItemStack head = new ItemStack(Material.PLAYER_HEAD);
             SkullMeta meta = (SkullMeta) head.getItemMeta();
             meta.setDisplayName("§b" + target.getName());
             meta.setOwningPlayer(target);
             meta.getPersistentDataContainer().set(plugin.playerKey(), PersistentDataType.STRING, target.getUniqueId().toString());
             head.setItemMeta(meta);
-            inv.setItem(slot++, head);
+            inventory.setItem(slot++, head);
         }
-        inv.setItem(size - 1, item(Material.ARROW, "Kembali"));
-        player.openInventory(inv);
+
+        int navBase = size - 9;
+        if (page > 0) inventory.setItem(navBase, navigationItem(Material.ARROW, "Halaman Sebelumnya", NAV_PREVIOUS));
+        inventory.setItem(navBase + 4, navigationItem(Material.BARRIER, "Kembali", NAV_BACK));
+        if (page < totalPages - 1) inventory.setItem(navBase + 8, navigationItem(Material.ARROW, "Halaman Berikutnya", NAV_NEXT));
+        player.openInventory(inventory);
     }
 
-    private void showMode(Player player, Player target) {
-        MenuHolder holder = new MenuHolder(MenuHolder.Type.TP_MODE, target.getUniqueId(), 9,
+    private void showMode(Player player, Player target, String returnMenuId) {
+        MenuHolder holder = new MenuHolder(MenuHolder.Type.TP_MODE, target.getUniqueId(), returnMenuId, 0, 9,
                 "TP • " + target.getName());
-        Inventory inv = holder.getInventory();
-        inv.setItem(0, item(Material.ARROW, "Kembali"));
-        inv.setItem(3, item(Material.ENDER_PEARL, "Pergi ke " + target.getName()));
-        inv.setItem(5, item(Material.LEAD, "Bawa " + target.getName() + " ke saya"));
-        inv.setItem(8, item(plugin.requests().toggles().isDisabled(player.getUniqueId())
+        Inventory inventory = holder.getInventory();
+        inventory.setItem(0, item(Material.ARROW, "Kembali"));
+        inventory.setItem(3, item(Material.ENDER_PEARL, "Pergi ke " + target.getName()));
+        inventory.setItem(5, item(Material.LEAD, "Bawa " + target.getName() + " ke saya"));
+        inventory.setItem(8, item(plugin.requests().toggles().isDisabled(player.getUniqueId())
                 ? Material.REDSTONE_BLOCK : Material.LIME_CONCRETE,
                 "Incoming TP: " + (plugin.requests().toggles().isDisabled(player.getUniqueId()) ? "OFF" : "ON")));
-        player.openInventory(inv);
+        player.openInventory(inventory);
     }
 
     @EventHandler
@@ -96,69 +142,109 @@ public final class JavaMenuService implements Listener {
         if (clicked == null || clicked.getType().isAir()) return;
 
         switch (holder.type()) {
-            case MAIN -> handleMain(player, event.getSlot());
-            case PLAYER_SELECT -> {
-                if (event.getSlot() == event.getInventory().getSize() - 1) {
-                    showMain(player);
+            case CONFIG -> handleConfiguredClick(player, holder, clicked);
+            case PLAYER_SELECT -> handlePlayerSelectClick(player, holder, clicked);
+            case TP_MODE -> handleTpMode(player, holder, event.getSlot());
+        }
+    }
+
+    private void handleConfiguredClick(Player player, MenuHolder holder, ItemStack clicked) {
+        ItemMeta meta = clicked.getItemMeta();
+        String action = meta.getPersistentDataContainer().get(plugin.buttonKey(), PersistentDataType.STRING);
+        if (action == null) return;
+
+        if (NAV_PREVIOUS.equals(action)) {
+            showConfiguredMenu(player, holder.menuId(), holder.page() - 1);
+            return;
+        }
+        if (NAV_NEXT.equals(action)) {
+            showConfiguredMenu(player, holder.menuId(), holder.page() + 1);
+            return;
+        }
+
+        MenuDefinition menu = plugin.menus().getMenu(holder.menuId());
+        if (menu == null) {
+            showMain(player);
+            return;
+        }
+        if (NAV_BACK.equals(action)) {
+            showConfiguredMenu(player, menu.backMenu(), 0);
+            return;
+        }
+
+        MenuButton button = plugin.menus().findButton(menu, action);
+        if (button == null) return;
+        if (!plugin.menus().canUse(player, button)) {
+            plugin.message(player, "no-permission");
+            return;
+        }
+
+        switch (button.type().toLowerCase(Locale.ROOT)) {
+            case "command" -> {
+                player.closeInventory();
+                plugin.executeMenuCommand(player, button);
+            }
+            case "teleport" -> showPlayerSelect(player, menu.id(), 0);
+            case "submenu" -> {
+                if (button.submenu() == null || button.submenu().isBlank()) {
+                    plugin.message(player, "menu-not-found", "%menu%", button.key());
                     return;
                 }
-                ItemMeta meta = clicked.getItemMeta();
-                String raw = meta.getPersistentDataContainer().get(plugin.playerKey(), PersistentDataType.STRING);
-                if (raw == null) return;
-                try {
-                    Player target = Bukkit.getPlayer(UUID.fromString(raw));
-                    if (target == null) {
-                        plugin.message(player, "player-not-found");
-                        showPlayerSelect(player);
-                        return;
-                    }
-                    showMode(player, target);
-                } catch (IllegalArgumentException ignored) {
-                }
+                showConfiguredMenu(player, button.submenu(), 0);
             }
-            case TP_MODE -> handleTpMode(player, holder.targetId(), event.getSlot());
+            case "close" -> player.closeInventory();
+            default -> plugin.message(player, "invalid-button-type", "%type%", button.type());
         }
     }
 
-    private void handleMain(Player player, int slot) {
-        switch (slot) {
-            case 10 -> showPlayerSelect(player);
-            case 11 -> plugin.executeMenuAction(player, "warp");
-            case 12 -> plugin.executeMenuAction(player, "pwarp");
-            case 13 -> plugin.executeMenuAction(player, "sethome");
-            case 14 -> plugin.executeMenuAction(player, "land");
-            case 15 -> plugin.executeMenuAction(player, "transfer");
-            case 16 -> plugin.executeMenuAction(player, "bank");
-            case 19 -> plugin.executeMenuAction(player, "team");
-            case 20 -> plugin.executeMenuAction(player, "shop");
-            case 21 -> plugin.executeMenuAction(player, "playershop");
-            case 22 -> plugin.executeMenuAction(player, "report");
-            case 23 -> plugin.executeMenuAction(player, "barter");
-            default -> {
+    private void handlePlayerSelectClick(Player player, MenuHolder holder, ItemStack clicked) {
+        ItemMeta meta = clicked.getItemMeta();
+        String nav = meta.getPersistentDataContainer().get(plugin.buttonKey(), PersistentDataType.STRING);
+        if (NAV_PREVIOUS.equals(nav)) {
+            showPlayerSelect(player, holder.menuId(), holder.page() - 1);
+            return;
+        }
+        if (NAV_NEXT.equals(nav)) {
+            showPlayerSelect(player, holder.menuId(), holder.page() + 1);
+            return;
+        }
+        if (NAV_BACK.equals(nav)) {
+            showConfiguredMenu(player, holder.menuId(), 0);
+            return;
+        }
+
+        String raw = meta.getPersistentDataContainer().get(plugin.playerKey(), PersistentDataType.STRING);
+        if (raw == null) return;
+        try {
+            Player target = Bukkit.getPlayer(UUID.fromString(raw));
+            if (target == null) {
+                plugin.message(player, "player-not-found");
+                showPlayerSelect(player, holder.menuId(), holder.page());
                 return;
             }
+            showMode(player, target, holder.menuId());
+        } catch (IllegalArgumentException ignored) {
         }
-        if (slot != 10) player.closeInventory();
     }
 
-    private void handleTpMode(Player player, UUID targetId, int slot) {
+    private void handleTpMode(Player player, MenuHolder holder, int slot) {
         if (slot == 0) {
-            showPlayerSelect(player);
+            showPlayerSelect(player, holder.menuId(), 0);
             return;
         }
         if (slot == 8) {
             boolean disabled = plugin.requests().toggles().toggle(player.getUniqueId());
             plugin.message(player, disabled ? "toggle-off" : "toggle-on");
-            Player target = targetId == null ? null : Bukkit.getPlayer(targetId);
-            if (target != null) showMode(player, target);
-            else showPlayerSelect(player);
+            Player target = holder.targetId() == null ? null : Bukkit.getPlayer(holder.targetId());
+            if (target != null) showMode(player, target, holder.menuId());
+            else showPlayerSelect(player, holder.menuId(), 0);
             return;
         }
-        if (targetId == null) return;
-        Player target = Bukkit.getPlayer(targetId);
+        if (holder.targetId() == null) return;
+        Player target = Bukkit.getPlayer(holder.targetId());
         if (target == null) {
             plugin.message(player, "player-not-found");
-            showPlayerSelect(player);
+            showPlayerSelect(player, holder.menuId(), 0);
             return;
         }
         if (slot == 3) {
@@ -170,10 +256,35 @@ public final class JavaMenuService implements Listener {
         }
     }
 
+    private ItemStack configuredItem(MenuButton button, Player player) {
+        Material material = Material.matchMaterial(button.javaMaterial() == null ? "PAPER" : button.javaMaterial());
+        if (material == null || material.isAir()) material = Material.PAPER;
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+        meta.setDisplayName(plugin.formatMenuText(button.name(), player));
+
+        if (button.lore() != null && !button.lore().isEmpty()) {
+            List<String> lore = new ArrayList<>();
+            for (String line : button.lore()) lore.add(plugin.formatMenuText(line, player));
+            meta.setLore(lore);
+        }
+        meta.getPersistentDataContainer().set(plugin.buttonKey(), PersistentDataType.STRING, button.key());
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    private ItemStack navigationItem(Material material, String name, String action) {
+        ItemStack item = item(material, name);
+        ItemMeta meta = item.getItemMeta();
+        meta.getPersistentDataContainer().set(plugin.buttonKey(), PersistentDataType.STRING, action);
+        item.setItemMeta(meta);
+        return item;
+    }
+
     private ItemStack item(Material material, String name) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§f" + name);
+        meta.setDisplayName(Colors.legacy("&f" + name));
         item.setItemMeta(meta);
         return item;
     }

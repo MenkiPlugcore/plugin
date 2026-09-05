@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.0
+
+- Reworked the main menu into a fully config-driven button system.
+- Buttons can now be added, removed, renamed, reordered, hidden, or disabled from `config.yml` without recompiling the plugin.
+- Added configurable button types: `command`, `teleport`, `submenu`, and `close`.
+- Added per-button Bedrock texture path, Java material, lore, permission, and player/console command executor.
+- Added `%player%`, `%world%`, and `%uuid%` command placeholders.
+- Added config-defined submenus with automatic Back navigation.
+- Added Java menu pagination and player-selector pagination.
+- Added `/menu reload` for live config reloads.
+- Added migration from the v1.1 `menu-actions` and main Bedrock icon settings when upgrading an existing config.
+
 ## 1.1.0
 
 - Added image icons to native Bedrock menu buttons using vanilla Bedrock texture paths.
