@@ -9,7 +9,7 @@ Repository ini menggunakan struktur monorepo: setiap plugin berada di folder ter
 | Plugin | Versi | Platform | Java | Status |
 |---|---:|---|---:|---|
 | [MENKIAFK](plugins/MENKIAFK) | 1.1.0 Universal | Paper 1.21.11–26.2, Spigot 1.21.11 | 21+ | Aktif |
-| [MoonSignMenu](plugins/MoonSignMenu) | 1.2.0 | Paper 1.21.11 + Geyser/Floodgate | 21+ | Aktif |
+| [MoonSignMenu](plugins/MoonSignMenu) | 1.3.0 | Paper 1.21.11 + Geyser/Floodgate + optional EssentialsX/AxTrade | 21+ | Aktif |
 | [MENKIESTESParty](plugins/MENKIESTESParty) | 1.0.0 Core | Paper 1.21.x / 1.21.11 | 21+ | Aktif |
 
 ## Struktur

@@ -13,6 +13,7 @@ import store.moonsign.menu.command.MenuCommand;
 import store.moonsign.menu.command.TeleportCommands;
 import store.moonsign.menu.form.BedrockFormService;
 import store.moonsign.menu.gui.JavaMenuService;
+import store.moonsign.menu.integration.EssentialsHomeService;
 import store.moonsign.menu.item.MemberBookService;
 import store.moonsign.menu.menu.MenuConfigService;
 import store.moonsign.menu.menu.MenuConfigService.MenuButton;
@@ -30,6 +31,7 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
     private JavaMenuService javaMenuService;
     private MemberBookService memberBookService;
     private MenuConfigService menuConfigService;
+    private EssentialsHomeService essentialsHomeService;
     private NamespacedKey playerKey;
     private NamespacedKey buttonKey;
 
@@ -46,6 +48,23 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
         requestManager = new TeleportRequestManager(this, toggleStore);
         javaMenuService = new JavaMenuService(this);
         memberBookService = new MemberBookService(this);
+
+        if (Bukkit.getPluginManager().isPluginEnabled("Essentials")) {
+            try {
+                essentialsHomeService = new EssentialsHomeService(this);
+                if (essentialsHomeService.initialize()) {
+                    getLogger().info("EssentialsX detected: Bedrock Home Manager enabled.");
+                } else {
+                    essentialsHomeService = null;
+                    getLogger().warning("Essentials plugin detected but Home integration could not initialize.");
+                }
+            } catch (Throwable throwable) {
+                essentialsHomeService = null;
+                getLogger().warning("EssentialsX Home integration unavailable: " + throwable.getMessage());
+            }
+        } else {
+            getLogger().info("EssentialsX not detected: special Home Manager will show a dependency warning.");
+        }
 
         if (Bukkit.getPluginManager().isPluginEnabled("floodgate")) {
             try {
@@ -64,7 +83,7 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(javaMenuService, this);
         Bukkit.getPluginManager().registerEvents(memberBookService, this);
         memberBookService.giveToOnlinePlayers();
-        getLogger().info("MoonSignMenu v1.2.0 enabled.");
+        getLogger().info("MoonSignMenu v1.3.0 enabled.");
     }
 
     private void migrateAndMergeConfig() {
@@ -82,7 +101,9 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
             }
         }
 
+        int configVersion = getConfig().getInt("config-version", hadDynamicMenu ? 2 : 1);
         getConfig().options().copyDefaults(true);
+
         if (!hadDynamicMenu) {
             for (Map.Entry<String, String> entry : legacyCommands.entrySet()) {
                 getConfig().set("menu.main.buttons." + entry.getKey() + ".command", entry.getValue());
@@ -91,7 +112,27 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
                 getConfig().set("menu.main.buttons." + entry.getKey() + ".icon", entry.getValue());
             }
         }
+
+        if (configVersion < 3) {
+            migrateSpecialButton("sethome", "sethome", "homes", "homes");
+            migrateSpecialButton("transfer", "pay", "pay", "pay");
+            migrateSpecialButton("barter", "trade", "trade", "axtrade");
+            getConfig().set("config-version", 3);
+        }
         saveConfig();
+    }
+
+    private void migrateSpecialButton(String key, String expectedCommand, String newType, String fallbackCommand) {
+        String base = "menu.main.buttons." + key;
+        String type = getConfig().getString(base + ".type", "command");
+        String command = getConfig().getString(base + ".command", "");
+        String normalized = command == null ? "" : command.trim();
+        if (normalized.startsWith("/")) normalized = normalized.substring(1);
+
+        if ("command".equalsIgnoreCase(type) && normalized.equalsIgnoreCase(expectedCommand)) {
+            getConfig().set(base + ".type", newType);
+            getConfig().set(base + ".command", fallbackCommand);
+        }
     }
 
     private void registerCommands() {
@@ -140,6 +181,10 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
         return menuConfigService;
     }
 
+    public EssentialsHomeService homes() {
+        return essentialsHomeService;
+    }
+
     public NamespacedKey playerKey() {
         return playerKey;
     }
@@ -163,10 +208,28 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
                 .replace("%player%", player.getName())
                 .replace("%uuid%", player.getUniqueId().toString())
                 .replace("%world%", player.getWorld().getName());
-        if (command.startsWith("/")) command = command.substring(1);
+        dispatchCommand(player, command, button.executor());
+    }
 
-        String executor = button.executor() == null ? "player" : button.executor().trim();
-        if (executor.equalsIgnoreCase("console")) {
+    public void dispatchPlayerTemplate(Player player, String template, Map<String, String> placeholders) {
+        if (template == null || template.isBlank()) {
+            message(player, "action-disabled");
+            return;
+        }
+        String command = template
+                .replace("%player%", player.getName())
+                .replace("%uuid%", player.getUniqueId().toString())
+                .replace("%world%", player.getWorld().getName());
+        for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+            command = command.replace(entry.getKey(), entry.getValue());
+        }
+        dispatchCommand(player, command, "player");
+    }
+
+    private void dispatchCommand(Player player, String command, String executor) {
+        if (command.startsWith("/")) command = command.substring(1);
+        String normalizedExecutor = executor == null ? "player" : executor.trim();
+        if (normalizedExecutor.equalsIgnoreCase("console")) {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
         } else {
             player.performCommand(command);

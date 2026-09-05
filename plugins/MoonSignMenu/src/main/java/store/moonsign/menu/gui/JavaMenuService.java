@@ -184,6 +184,11 @@ public final class JavaMenuService implements Listener {
                 player.closeInventory();
                 plugin.executeMenuCommand(player, button);
             }
+            case "homes", "pay", "trade" -> {
+                // The rich click-only flows are Bedrock Forms. Java keeps the configured command as fallback.
+                player.closeInventory();
+                plugin.executeMenuCommand(player, button);
+            }
             case "teleport" -> showPlayerSelect(player, menu.id(), 0);
             case "submenu" -> {
                 if (button.submenu() == null || button.submenu().isBlank()) {
