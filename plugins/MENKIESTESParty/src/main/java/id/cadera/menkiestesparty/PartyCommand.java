@@ -57,14 +57,21 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
             }
             case "invite" -> {
                 if (a.length < 2) {
-                    p.sendMessage(parties.prefix() + Util.color(" &c/party invite <player>"));
+                    plugin.partyGui().openInviteMenu(p);
+                    break;
+                }
+                if (plugin.war().membershipLocked()) {
+                    p.sendMessage(parties.prefix() + Util.color(" &cRoster Party dikunci selama Party War prepare/aktif."));
                     break;
                 }
                 Player t = Bukkit.getPlayer(a[1]);
                 if (t == null) p.sendMessage(parties.prefix() + Util.color(" &cPlayer tidak online."));
                 else parties.invite(p, t);
             }
-            case "accept" -> parties.accept(p);
+            case "accept" -> {
+                if (plugin.war().membershipLocked()) p.sendMessage(parties.prefix() + Util.color(" &cRoster Party dikunci selama Party War prepare/aktif."));
+                else parties.accept(p);
+            }
             case "leave" -> parties.leave(p);
             case "disband" -> parties.disband(p);
             case "kick" -> {
@@ -91,7 +98,7 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
             }
             case "sethome" -> parties.setHome(p);
             case "home" -> parties.home(p);
-            case "members" -> showMembers(p);
+            case "members", "manage" -> plugin.partyGui().openMemberMenu(p);
             case "contribution", "contrib" -> parties.showContribution(p);
             case "rep" -> showRep(p);
             case "level" -> showLevel(p);
@@ -240,23 +247,19 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
         }
         switch (a[0].toLowerCase(Locale.ROOT)) {
             case "claim" -> plugin.hall().claim(p);
-            case "item", "reward" -> plugin.hall().showConfiguredItem(p);
-            case "setitem" -> plugin.hall().setRewardItem(p);
-            case "clearitem" -> plugin.hall().clearRewardItem(p);
-            default -> p.sendMessage(parties.prefix() + Util.color(" &7/partyhall [claim|item] &8| &cAdmin: setitem|clearitem"));
-        }
-    }
-
-    private void showMembers(Player p) {
-        String party = parties.partyOf(p.getUniqueId());
-        if (party == null) {
-            p.sendMessage(parties.prefix() + Util.color(" &cKamu belum punya Party."));
-            return;
-        }
-        p.sendMessage(Util.color("&b&lMEMBERS &7- &f" + parties.display(party)));
-        for (var u : parties.members(party)) {
-            OfflinePlayer op = Bukkit.getOfflinePlayer(u);
-            p.sendMessage(Util.color("&7- &f" + (op.getName() == null ? u.toString().substring(0, 8) : op.getName()) + " &8[&b" + parties.role(u) + "&8]"));
+            case "plan", "queue", "items", "item", "reward" -> plugin.hall().showPlan(p);
+            case "setitem" -> {
+                int slot = a.length > 1 ? Util.parseInt(a[1], 1, 1, 99) : 1;
+                plugin.hall().setPlannedItem(p, slot);
+            }
+            case "additem" -> plugin.hall().appendPlannedItem(p);
+            case "removeitem", "delitem" -> {
+                if (a.length < 2) p.sendMessage(parties.prefix() + Util.color(" &c/partyhall removeitem <slot>"));
+                else plugin.hall().removePlannedItem(p, Util.parseInt(a[1], -1, -1, 99));
+            }
+            case "clearitem", "clearitems" -> plugin.hall().clearPlannedItems(p);
+            case "setcurrent" -> plugin.hall().setCurrentItem(p);
+            default -> p.sendMessage(parties.prefix() + Util.color(" &7/partyhall claim &8| &fplan &8| &fsetitem [slot] &8| &fadditem &8| &fremoveitem <slot> &8| &fclearitems &8| &fsetcurrent"));
         }
     }
 
@@ -311,18 +314,20 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
         for (String line : List.of(
                 "&f/party &7- GUI",
                 "&f/party create <nama>",
-                "&f/party invite <player>",
+                "&f/party invite [player] &7- Owner/Officer",
                 "&f/party accept",
                 "&f/party leave",
-                "&f/party kick/promote/demote <player>",
+                "&f/party kick <player> &7- Owner/Officer",
+                "&f/party promote/demote <player> &7- Owner only",
                 "&f/party sethome | home",
-                "&f/party members | contribution",
+                "&f/party members | manage &7- GUI roster",
+                "&f/party contribution",
                 "&f/party rep | level | top",
                 "&f/party quest | relic",
                 "&f/party war [hunt/top]",
                 "&f/party claimchest",
-                "&f/party hall [claim|item]",
-                "&cAdmin Hall: &f/partyhall setitem | clearitem",
+                "&f/party hall [claim]",
+                "&cAdmin Hall: &f/partyhall plan|setitem|additem|removeitem|clearitems|setcurrent",
                 "&f/pchat <pesan>")) {
             s.sendMessage(Util.color(line));
         }
@@ -334,11 +339,17 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
             List<String> base = switch (command.getName().toLowerCase(Locale.ROOT)) {
                 case "partywar" -> List.of("status", "top", "hunt", "start", "finish", "cancel");
                 case "partyseason" -> List.of("status", "top", "start", "end");
-                case "partyhall" -> List.of("claim", "item", "setitem", "clearitem");
-                default -> List.of("create", "invite", "accept", "leave", "disband", "kick", "promote", "demote", "sethome", "home", "members", "contribution", "rep", "level", "top", "quest", "relic", "war", "claimchest", "hall", "help");
+                case "partyhall" -> List.of("claim", "plan", "setitem", "additem", "removeitem", "clearitems", "setcurrent");
+                default -> List.of("create", "invite", "accept", "leave", "disband", "kick", "promote", "demote", "sethome", "home", "members", "manage", "contribution", "rep", "level", "top", "quest", "relic", "war", "claimchest", "hall", "help");
             };
             String q = args[0].toLowerCase(Locale.ROOT);
             return base.stream().filter(x -> x.startsWith(q)).toList();
+        }
+        if (command.getName().equalsIgnoreCase("partyhall") && args.length == 2 && args[0].equalsIgnoreCase("setitem")) {
+            List<String> slots = new ArrayList<>();
+            for (int i = 1; i <= 12; i++) slots.add(String.valueOf(i));
+            String q = args[1].toLowerCase(Locale.ROOT);
+            return slots.stream().filter(x -> x.startsWith(q)).toList();
         }
         return new ArrayList<>();
     }
