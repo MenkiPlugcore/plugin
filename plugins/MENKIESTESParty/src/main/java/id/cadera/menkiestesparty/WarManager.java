@@ -1,9 +1,6 @@
 package id.cadera.menkiestesparty;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import java.time.LocalDateTime;
@@ -24,6 +21,7 @@ public final class WarManager {
     private final Map<UUID, Integer> sessionPoints = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> sessionDeaths = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> participationMinutes = new ConcurrentHashMap<>();
+    private final Set<UUID> combatParticipants = ConcurrentHashMap.newKeySet();
     private final Map<String, Long> victimCooldowns = new ConcurrentHashMap<>();
     private final Map<UUID, CombatTag> combat = new ConcurrentHashMap<>();
     private Phase phase = Phase.NONE;
@@ -75,7 +73,7 @@ public final class WarManager {
         Bukkit.broadcastMessage(parties.prefix() + Util.color(" &c&lPARTY WAR DIMULAI! &7Durasi &f" + durationMinutes + "m &8| &7Target &f" + targetPoints + " &8| &7World &f" + scoreWorld()));
         for (Player p : Bukkit.getOnlinePlayers()) {
             String party = parties.partyOf(p.getUniqueId());
-            if (party != null && !p.isOp()) participationMinutes.putIfAbsent(p.getUniqueId(), 0);
+            if (party != null && !p.isOp() && scoreWorld(p)) participationMinutes.putIfAbsent(p.getUniqueId(), 0);
         }
         persistRuntime();
     }
@@ -83,7 +81,10 @@ public final class WarManager {
     public void cancel(String reason) {
         if (phase == Phase.NONE) return;
         Bukkit.broadcastMessage(parties.prefix() + Util.color(" &cParty War dibatalkan" + (reason == null ? "." : ": &f" + reason)));
-        phase = Phase.NONE; phaseEndsAt = 0; clearRuntime(); persistRuntime();
+        phase = Phase.NONE;
+        phaseEndsAt = 0;
+        clearRuntime();
+        persistRuntime();
     }
 
     public void finishManual() {
@@ -103,7 +104,7 @@ public final class WarManager {
     public void tickMinute() {
         if (!active()) return;
         for (Player p : Bukkit.getOnlinePlayers()) {
-            if (p.isOp()) continue;
+            if (p.isOp() || !scoreWorld(p)) continue;
             String party = parties.partyOf(p.getUniqueId());
             if (party == null) continue;
             participationMinutes.merge(p.getUniqueId(), 1, Integer::sum);
@@ -112,7 +113,8 @@ public final class WarManager {
 
     public boolean isEnemy(Player a, Player b) {
         if (!active()) return false;
-        String pa = parties.partyOf(a.getUniqueId()), pb = parties.partyOf(b.getUniqueId());
+        String pa = parties.partyOf(a.getUniqueId());
+        String pb = parties.partyOf(b.getUniqueId());
         return pa != null && pb != null && !pa.equals(pb) && !a.isOp() && !b.isOp();
     }
 
@@ -120,19 +122,28 @@ public final class WarManager {
         return p.getWorld() != null && p.getWorld().getName().equalsIgnoreCase(scoreWorld());
     }
 
-    public String scoreWorld() { return plugin.getConfig().getString("war.score-world", "world"); }
+    public String scoreWorld() {
+        return plugin.getConfig().getString("war.score-world", "world");
+    }
 
     public void registerCombat(Player attacker, Player victim) {
         if (!isEnemy(attacker, victim)) return;
         long exp = System.currentTimeMillis() + plugin.getConfig().getLong("war.combat-logout-window-seconds", 20) * 1000L;
         boolean eligible = scoreWorld(attacker) && scoreWorld(victim);
         combat.put(victim.getUniqueId(), new CombatTag(attacker.getUniqueId(), parties.partyOf(attacker.getUniqueId()), exp, eligible));
+        if (eligible) {
+            combatParticipants.add(attacker.getUniqueId());
+            combatParticipants.add(victim.getUniqueId());
+            participationMinutes.putIfAbsent(attacker.getUniqueId(), 0);
+            participationMinutes.putIfAbsent(victim.getUniqueId(), 0);
+        }
     }
 
     public void onKill(Player killer, Player victim) {
         if (!active() || killer == null || victim == null || killer.equals(victim)) return;
         if (!scoreWorld(killer) || !scoreWorld(victim) || !isEnemy(killer, victim)) return;
         if (killer.isOp() || victim.isOp()) return;
+
         String cdKey = killer.getUniqueId() + "::" + victim.getUniqueId();
         long now = System.currentTimeMillis();
         if (victimCooldowns.getOrDefault(cdKey, 0L) > now) {
@@ -140,6 +151,7 @@ public final class WarManager {
             return;
         }
         victimCooldowns.put(cdKey, now + plugin.getConfig().getLong("war.same-victim-cooldown-minutes", 5) * 60_000L);
+
         String kp = parties.partyOf(killer.getUniqueId());
         int points = victim.getUniqueId().equals(parties.owner(parties.partyOf(victim.getUniqueId())))
                 ? plugin.getConfig().getInt("war.owner-kill-points", 2)
@@ -148,6 +160,8 @@ public final class WarManager {
         sessionKills.merge(killer.getUniqueId(), 1, Integer::sum);
         sessionPoints.merge(killer.getUniqueId(), points, Integer::sum);
         sessionDeaths.merge(victim.getUniqueId(), 1, Integer::sum);
+        combatParticipants.add(killer.getUniqueId());
+        combatParticipants.add(victim.getUniqueId());
         combat.remove(victim.getUniqueId());
     }
 
@@ -155,14 +169,17 @@ public final class WarManager {
         if (!active() || !plugin.getConfig().getBoolean("war.combat-logout-points", true)) return;
         CombatTag tag = combat.remove(victim.getUniqueId());
         if (tag == null || tag.expiresAt() < System.currentTimeMillis() || !tag.scoreEligible() || !scoreWorld(victim)) return;
+
         Player attacker = Bukkit.getPlayer(tag.attacker());
         if (attacker == null || attacker.isOp()) return;
         String victimParty = parties.partyOf(victim.getUniqueId());
         if (victimParty == null || victimParty.equals(tag.attackerParty())) return;
+
         String cdKey = attacker.getUniqueId() + "::" + victim.getUniqueId();
         long now = System.currentTimeMillis();
         if (victimCooldowns.getOrDefault(cdKey, 0L) > now) return;
         victimCooldowns.put(cdKey, now + plugin.getConfig().getLong("war.same-victim-cooldown-minutes", 5) * 60_000L);
+
         int points = victim.getUniqueId().equals(parties.owner(victimParty))
                 ? plugin.getConfig().getInt("war.owner-kill-points", 2)
                 : plugin.getConfig().getInt("war.kill-points", 1);
@@ -170,11 +187,17 @@ public final class WarManager {
         sessionKills.merge(attacker.getUniqueId(), 1, Integer::sum);
         sessionPoints.merge(attacker.getUniqueId(), points, Integer::sum);
         sessionDeaths.merge(victim.getUniqueId(), 1, Integer::sum);
+        combatParticipants.add(attacker.getUniqueId());
+        combatParticipants.add(victim.getUniqueId());
     }
 
     private void addScore(String party, int points, Player killer, Player victim, boolean logout) {
-        scores.merge(party, points, Integer::sum); kills.merge(party, 1, Integer::sum);
-        Bukkit.broadcastMessage(parties.prefix() + Util.color(" &cWAR &8» &b" + parties.display(party) + " &e+" + points + " poin &7(" + killer.getName() + (logout ? " menang combat logout " : " mengalahkan ") + victim.getName() + ") &8| &f" + scores.get(party) + "/" + targetPoints));
+        scores.merge(party, points, Integer::sum);
+        kills.merge(party, 1, Integer::sum);
+        Bukkit.broadcastMessage(parties.prefix() + Util.color(
+                " &cWAR &8» &b" + parties.display(party) + " &e+" + points + " poin &7(" + killer.getName()
+                        + (logout ? " menang combat logout " : " mengalahkan ") + victim.getName() + ") &8| &f"
+                        + scores.get(party) + "/" + targetPoints));
         if (scores.get(party) >= targetPoints) end(party, "target");
     }
 
@@ -185,32 +208,81 @@ public final class WarManager {
     private void end(String winner, String reason) {
         if (phase != Phase.ACTIVE) return;
         phase = Phase.NONE;
+
         int best = winner == null ? 0 : scores.getOrDefault(winner, 0);
         String stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        int id = db.wars.getInt("history-seq", 0) + 1; db.wars.set("history-seq", id);
+        int id = db.wars.getInt("history-seq", 0) + 1;
+        db.wars.set("history-seq", id);
         String base = "history." + id;
-        db.wars.set(base + ".run-id", runId); db.wars.set(base + ".date", stamp); db.wars.set(base + ".winner", winner);
-        db.wars.set(base + ".winner-display", winner == null ? "DRAW" : parties.display(winner)); db.wars.set(base + ".score", best); db.wars.set(base + ".reason", reason);
-        for (Map.Entry<String,Integer> e : scores.entrySet()) db.wars.set(base + ".scores." + e.getKey(), e.getValue());
+        db.wars.set(base + ".run-id", runId);
+        db.wars.set(base + ".date", stamp);
+        db.wars.set(base + ".winner", winner);
+        db.wars.set(base + ".winner-display", winner == null ? "DRAW" : parties.display(winner));
+        db.wars.set(base + ".score", best);
+        db.wars.set(base + ".reason", reason);
+        for (Map.Entry<String, Integer> e : scores.entrySet()) {
+            db.wars.set(base + ".scores." + e.getKey(), e.getValue());
+        }
+
+        Set<UUID> allParticipants = new HashSet<>();
+        allParticipants.addAll(participationMinutes.keySet());
+        allParticipants.addAll(sessionKills.keySet());
+        allParticipants.addAll(sessionPoints.keySet());
+        allParticipants.addAll(sessionDeaths.keySet());
+        allParticipants.addAll(combatParticipants);
+
+        int minMinutes = plugin.getConfig().getInt("war.min-participation-minutes", 5);
+        Set<UUID> hallEligible = new HashSet<>();
+        for (UUID uuid : allParticipants) {
+            String pbase = base + ".participants." + uuid;
+            String playerParty = parties.partyOf(uuid);
+            int minutes = participationMinutes.getOrDefault(uuid, 0);
+            int playerKills = sessionKills.getOrDefault(uuid, 0);
+            int points = sessionPoints.getOrDefault(uuid, 0);
+            int deaths = sessionDeaths.getOrDefault(uuid, 0);
+            boolean combatRecord = combatParticipants.contains(uuid);
+            boolean eligible = winner != null
+                    && winner.equals(playerParty)
+                    && minutes >= minMinutes
+                    && combatRecord;
+
+            db.wars.set(pbase + ".name", Bukkit.getOfflinePlayer(uuid).getName());
+            db.wars.set(pbase + ".party", playerParty);
+            db.wars.set(pbase + ".minutes", minutes);
+            db.wars.set(pbase + ".kills", playerKills);
+            db.wars.set(pbase + ".points", points);
+            db.wars.set(pbase + ".deaths", deaths);
+            db.wars.set(pbase + ".combat", combatRecord);
+            db.wars.set(pbase + ".eligible", eligible);
+
+            if (eligible) hallEligible.add(uuid);
+        }
+
         if (winner != null) {
             int rep = plugin.getConfig().getInt("war.reward.reputation", 500);
             parties.addRep(winner, rep);
+
             int chest = plugin.getConfig().getInt("war.reward.chests-per-member", 1);
-            int minMinutes = plugin.getConfig().getInt("war.min-participation-minutes", 5);
-            for (UUID u : parties.members(winner)) {
-                if (participationMinutes.getOrDefault(u, 0) >= minMinutes) {
-                    String path = "players." + u + ".war-chests";
+            for (UUID uuid : parties.members(winner)) {
+                if (participationMinutes.getOrDefault(uuid, 0) >= minMinutes) {
+                    String path = "players." + uuid + ".war-chests";
                     int current = db.parties.getInt(path, 0);
                     db.parties.set(path, Math.min(16, current + chest));
                 }
             }
+
             plugin.season().recordWarWin(winner, plugin.getConfig().getInt("war.season-points", 10));
-            Bukkit.broadcastMessage(parties.prefix() + Util.color(" &6&lPARTY WAR SELESAI! &fPemenang: &b" + parties.display(winner) + " &8| &e" + best + " poin &8| &a+" + rep + " Rep"));
-            plugin.hall().awardWar(winner, runId);
+            Bukkit.broadcastMessage(parties.prefix() + Util.color(
+                    " &6&lPARTY WAR SELESAI! &fPemenang: &b" + parties.display(winner) + " &8| &e" + best
+                            + " poin &8| &a+" + rep + " Rep &8| &6Hall eligible: &f" + hallEligible.size()));
+            plugin.hall().awardWar(winner, runId, hallEligible);
         } else {
             Bukkit.broadcastMessage(parties.prefix() + Util.color(" &6&lPARTY WAR SELESAI! &7Tidak ada pemenang."));
         }
-        clearRuntime(); persistRuntime(); plugin.saveDataSoon();
+
+        clearRuntime();
+        persistRuntime();
+        plugin.saveDataSoon();
     }
 
     public void showStatus(Player p) {
@@ -218,38 +290,78 @@ public final class WarManager {
         p.sendMessage(Util.color("&8&m-----------------------------"));
         p.sendMessage(Util.color("&c&lPARTY WAR STATUS"));
         p.sendMessage(Util.color("&7Phase: &f" + phase + " &8| &7World: &f" + scoreWorld()));
-        if (phase != Phase.NONE) p.sendMessage(Util.color("&7Sisa: &f" + (secs/60) + "m " + (secs%60) + "s &8| &7Target: &f" + targetPoints));
+        if (phase != Phase.NONE) {
+            p.sendMessage(Util.color("&7Sisa: &f" + (secs / 60) + "m " + (secs % 60) + "s &8| &7Target: &f" + targetPoints));
+        }
         showTop(p);
     }
 
     public void showTop(Player p) {
-        if (scores.isEmpty()) { p.sendMessage(Util.color("&7Belum ada poin Party War.")); return; }
-        List<Map.Entry<String,Integer>> list = new ArrayList<>(scores.entrySet()); list.sort((a,b)->Integer.compare(b.getValue(),a.getValue()));
-        int i=1; for (Map.Entry<String,Integer> e : list.subList(0,Math.min(10,list.size()))) p.sendMessage(Util.color("&e#"+i+++" &b"+parties.display(e.getKey())+" &7- &f"+e.getValue()+" poin"));
+        if (scores.isEmpty()) {
+            p.sendMessage(Util.color("&7Belum ada poin Party War."));
+            return;
+        }
+        List<Map.Entry<String, Integer>> list = new ArrayList<>(scores.entrySet());
+        list.sort((a, b) -> Integer.compare(b.getValue(), a.getValue()));
+        int i = 1;
+        for (Map.Entry<String, Integer> e : list.subList(0, Math.min(10, list.size()))) {
+            p.sendMessage(Util.color("&e#" + i++ + " &b" + parties.display(e.getKey()) + " &7- &f" + e.getValue() + " poin"));
+        }
     }
 
     public void hunt(Player p) {
-        if (!active()) { p.sendMessage(parties.prefix()+Util.color(" &cParty War belum aktif.")); return; }
-        String own = parties.partyOf(p.getUniqueId()); if (own == null) { p.sendMessage(parties.prefix()+Util.color(" &cKamu belum punya Party.")); return; }
-        Player nearest = null; double dist = Double.MAX_VALUE;
+        if (!active()) {
+            p.sendMessage(parties.prefix() + Util.color(" &cParty War belum aktif."));
+            return;
+        }
+        String own = parties.partyOf(p.getUniqueId());
+        if (own == null) {
+            p.sendMessage(parties.prefix() + Util.color(" &cKamu belum punya Party."));
+            return;
+        }
+
+        Player nearest = null;
+        double dist = Double.MAX_VALUE;
         for (Player other : Bukkit.getOnlinePlayers()) {
             if (other.equals(p) || other.isOp() || !scoreWorld(other) || !scoreWorld(p)) continue;
-            String op = parties.partyOf(other.getUniqueId()); if (op == null || op.equals(own)) continue;
-            double d = p.getLocation().distanceSquared(other.getLocation()); if (d < dist) { dist=d; nearest=other; }
+            String otherParty = parties.partyOf(other.getUniqueId());
+            if (otherParty == null || otherParty.equals(own)) continue;
+            double d = p.getLocation().distanceSquared(other.getLocation());
+            if (d < dist) {
+                dist = d;
+                nearest = other;
+            }
         }
-        if (nearest == null) { p.sendMessage(parties.prefix()+Util.color(" &7Tidak ada musuh online di world War.")); return; }
+        if (nearest == null) {
+            p.sendMessage(parties.prefix() + Util.color(" &7Tidak ada musuh online di world War."));
+            return;
+        }
         p.setCompassTarget(nearest.getLocation());
-        p.sendMessage(parties.prefix()+Util.color(" &cTracker diarahkan ke musuh terdekat: &f"+nearest.getName()+" &7("+(int)Math.sqrt(dist)+" block)"));
+        p.sendMessage(parties.prefix() + Util.color(" &cTracker diarahkan ke musuh terdekat: &f" + nearest.getName() + " &7(" + (int) Math.sqrt(dist) + " block)"));
     }
 
-    public int score(String party) { return scores.getOrDefault(party, 0); }
+    public int score(String party) {
+        return scores.getOrDefault(party, 0);
+    }
 
     private void persistRuntime() {
-        db.wars.set("runtime.phase", phase.name()); db.wars.set("runtime.ends-at", phaseEndsAt); db.wars.set("runtime.duration", durationMinutes); db.wars.set("runtime.target", targetPoints); db.wars.set("runtime.run-id", runId);
+        db.wars.set("runtime.phase", phase.name());
+        db.wars.set("runtime.ends-at", phaseEndsAt);
+        db.wars.set("runtime.duration", durationMinutes);
+        db.wars.set("runtime.target", targetPoints);
+        db.wars.set("runtime.run-id", runId);
     }
 
     private void clearRuntime() {
-        scores.clear(); kills.clear(); sessionKills.clear(); sessionPoints.clear(); sessionDeaths.clear(); participationMinutes.clear(); victimCooldowns.clear(); combat.clear();
+        scores.clear();
+        kills.clear();
+        sessionKills.clear();
+        sessionPoints.clear();
+        sessionDeaths.clear();
+        participationMinutes.clear();
+        combatParticipants.clear();
+        victimCooldowns.clear();
+        combat.clear();
         db.wars.set("runtime", null);
     }
 }
