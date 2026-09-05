@@ -8,15 +8,19 @@ import org.jetbrains.annotations.NotNull;
 import java.util.UUID;
 
 public final class MenuHolder implements InventoryHolder {
-    public enum Type { MAIN, PLAYER_SELECT, TP_MODE }
+    public enum Type { CONFIG, PLAYER_SELECT, TP_MODE }
 
     private final Type type;
     private final UUID targetId;
+    private final String menuId;
+    private final int page;
     private final Inventory inventory;
 
-    public MenuHolder(Type type, UUID targetId, int size, String title) {
+    public MenuHolder(Type type, UUID targetId, String menuId, int page, int size, String title) {
         this.type = type;
         this.targetId = targetId;
+        this.menuId = menuId == null ? "main" : menuId;
+        this.page = Math.max(0, page);
         this.inventory = Bukkit.createInventory(this, size, title);
     }
 
@@ -26,6 +30,14 @@ public final class MenuHolder implements InventoryHolder {
 
     public UUID targetId() {
         return targetId;
+    }
+
+    public String menuId() {
+        return menuId;
+    }
+
+    public int page() {
+        return page;
     }
 
     @Override
