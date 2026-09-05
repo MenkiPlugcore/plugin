@@ -80,3 +80,4 @@ season:
 
 reward-hall:
   enabled: true
+  max-planned-rewards: 12
