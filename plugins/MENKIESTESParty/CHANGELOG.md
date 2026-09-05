@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.0.3 - 2026-09-06
+
+Reward planning and member-management update.
+
+- Reward Hall now supports a future War reward queue instead of only one active template.
+- `/partyhall setitem [slot]` sets/replaces a planned reward; slot `1` is the next War.
+- `/partyhall additem` appends the held item to the next free future War slot.
+- `/partyhall plan` shows the planned reward queue.
+- `/partyhall removeitem <slot>` removes a planned reward and compacts the queue.
+- `/partyhall clearitems` clears all future Hall rewards.
+- `/partyhall setcurrent` can recover/replace the item for the already-awarded current Hall entry.
+- Each completed Party War consumes only the next planned item and snapshots it into that War's Hall entry; later rewards remain queued.
+- Existing v1.0.2 `reward-item` data is treated as a one-time legacy next reward for migration compatibility.
+- Added GUI Invite Player and Manage Members flows, injected directly into `/party`.
+- Owner can promote/demote and kick non-owner members from the GUI.
+- Officer can invite players and kick regular Members, but cannot manage Owner or another Officer.
+- `/party invite` without a player opens the invite GUI; `/party members` and `/party manage` open the roster GUI.
+- Direct invite/accept commands are blocked while Party War roster locking is active.
+
 ## 1.0.2 - 2026-09-06
 
 Reward Hall participation and item-management update.
