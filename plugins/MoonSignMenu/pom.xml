@@ -6,9 +6,9 @@
 
     <groupId>store.moonsign</groupId>
     <artifactId>MoonSignMenu</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
     <name>MoonSignMenu</name>
-    <description>Native Bedrock member menu and teleport request system for MOONSIGN.</description>
+    <description>Config-driven Bedrock/Java member menu and teleport request system for MOONSIGN.</description>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
