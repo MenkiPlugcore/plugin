@@ -21,11 +21,7 @@ public final class MenuCommand implements CommandExecutor {
             sender.sendMessage("This command is player-only.");
             return true;
         }
-        if (plugin.forms() != null && plugin.forms().isBedrock(player)) {
-            plugin.forms().showMainMenu(player);
-        } else {
-            plugin.javaMenus().showMain(player);
-        }
+        plugin.openMenu(player);
         return true;
     }
 }

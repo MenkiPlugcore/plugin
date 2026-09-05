@@ -48,15 +48,19 @@ public final class JavaMenuService implements Listener {
                 .toList();
         if (players.isEmpty()) {
             plugin.message(player, "no-other-players");
+            showMain(player);
             return;
         }
 
-        int size = Math.min(54, Math.max(9, ((players.size() + 8) / 9) * 9));
+        int visiblePlayers = Math.min(players.size(), 45);
+        int playerRows = Math.max(1, (visiblePlayers + 8) / 9);
+        int size = Math.min(54, (playerRows + 1) * 9);
         MenuHolder holder = new MenuHolder(MenuHolder.Type.PLAYER_SELECT, null, size, "Pilih Player");
         Inventory inv = holder.getInventory();
+        int maxPlayerSlots = size - 9;
         int slot = 0;
         for (Player target : players) {
-            if (slot >= size) break;
+            if (slot >= maxPlayerSlots) break;
             ItemStack head = new ItemStack(Material.PLAYER_HEAD);
             SkullMeta meta = (SkullMeta) head.getItemMeta();
             meta.setDisplayName("§b" + target.getName());
@@ -65,6 +69,7 @@ public final class JavaMenuService implements Listener {
             head.setItemMeta(meta);
             inv.setItem(slot++, head);
         }
+        inv.setItem(size - 1, item(Material.ARROW, "Kembali"));
         player.openInventory(inv);
     }
 
@@ -72,6 +77,7 @@ public final class JavaMenuService implements Listener {
         MenuHolder holder = new MenuHolder(MenuHolder.Type.TP_MODE, target.getUniqueId(), 9,
                 "TP • " + target.getName());
         Inventory inv = holder.getInventory();
+        inv.setItem(0, item(Material.ARROW, "Kembali"));
         inv.setItem(3, item(Material.ENDER_PEARL, "Pergi ke " + target.getName()));
         inv.setItem(5, item(Material.LEAD, "Bawa " + target.getName() + " ke saya"));
         inv.setItem(8, item(plugin.requests().toggles().isDisabled(player.getUniqueId())
@@ -92,6 +98,10 @@ public final class JavaMenuService implements Listener {
         switch (holder.type()) {
             case MAIN -> handleMain(player, event.getSlot());
             case PLAYER_SELECT -> {
+                if (event.getSlot() == event.getInventory().getSize() - 1) {
+                    showMain(player);
+                    return;
+                }
                 ItemMeta meta = clicked.getItemMeta();
                 String raw = meta.getPersistentDataContainer().get(plugin.playerKey(), PersistentDataType.STRING);
                 if (raw == null) return;
@@ -99,6 +109,7 @@ public final class JavaMenuService implements Listener {
                     Player target = Bukkit.getPlayer(UUID.fromString(raw));
                     if (target == null) {
                         plugin.message(player, "player-not-found");
+                        showPlayerSelect(player);
                         return;
                     }
                     showMode(player, target);
@@ -131,18 +142,23 @@ public final class JavaMenuService implements Listener {
     }
 
     private void handleTpMode(Player player, UUID targetId, int slot) {
+        if (slot == 0) {
+            showPlayerSelect(player);
+            return;
+        }
         if (slot == 8) {
             boolean disabled = plugin.requests().toggles().toggle(player.getUniqueId());
             plugin.message(player, disabled ? "toggle-off" : "toggle-on");
             Player target = targetId == null ? null : Bukkit.getPlayer(targetId);
             if (target != null) showMode(player, target);
+            else showPlayerSelect(player);
             return;
         }
         if (targetId == null) return;
         Player target = Bukkit.getPlayer(targetId);
         if (target == null) {
             plugin.message(player, "player-not-found");
-            player.closeInventory();
+            showPlayerSelect(player);
             return;
         }
         if (slot == 3) {

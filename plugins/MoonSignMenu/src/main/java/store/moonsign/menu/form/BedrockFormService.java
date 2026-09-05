@@ -2,9 +2,9 @@ package store.moonsign.menu.form;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.geysermc.cumulus.form.CustomForm;
 import org.geysermc.cumulus.form.ModalForm;
 import org.geysermc.cumulus.form.SimpleForm;
+import org.geysermc.cumulus.util.FormImage;
 import org.geysermc.floodgate.api.FloodgateApi;
 import store.moonsign.menu.MoonSignMenuPlugin;
 import store.moonsign.menu.tp.TeleportMode;
@@ -28,22 +28,25 @@ public final class BedrockFormService {
     }
 
     public void showMainMenu(Player player) {
-        SimpleForm form = SimpleForm.builder()
+        SimpleForm.Builder builder = SimpleForm.builder()
                 .title("MOONSIGN • Menu Member")
-                .content("Pilih fitur yang ingin kamu buka.")
-                .button("🌐 Minta TP")
-                .button("🌀 Warp")
-                .button("🚪 Player Warp")
-                .button("🛏 Set Home")
-                .button("🗺 Tanah")
-                .button("💸 Transfer")
-                .button("🏦 Bank")
-                .button("🛡 Klan / Team")
-                .button("🛒 Toko")
-                .button("🏪 Player Shop")
-                .button("🚨 Lapor")
-                .button("🔄 Barter")
-                .validResultHandler(response -> sync(() -> {
+                .content("Pilih fitur yang ingin kamu buka.");
+
+        addButton(builder, "Minta TP", "tpa", "textures/items/ender_pearl");
+        addButton(builder, "Warp", "warp", "textures/items/compass_item");
+        addButton(builder, "Player Warp", "pwarp", "textures/items/map_filled");
+        addButton(builder, "Set Home", "sethome", "textures/items/bed_red");
+        addButton(builder, "Tanah", "land", "textures/items/map_empty");
+        addButton(builder, "Transfer", "transfer", "textures/items/paper");
+        addButton(builder, "Bank", "bank", "textures/items/gold_ingot");
+        addButton(builder, "Klan / Team", "team", "textures/items/iron_sword");
+        addButton(builder, "Toko", "shop", "textures/items/nether_star");
+        addButton(builder, "Player Shop", "playershop", "textures/items/name_tag");
+        addButton(builder, "Lapor", "report", "textures/items/book_writable");
+        addButton(builder, "Barter", "barter", "textures/items/lead");
+        addButton(builder, "Tutup", "close", "textures/items/barrier");
+
+        SimpleForm form = builder.validResultHandler(response -> sync(() -> {
                     if (!player.isOnline()) return;
                     switch (response.clickedButtonId()) {
                         case 0 -> showTeleportForm(player);
@@ -58,11 +61,12 @@ public final class BedrockFormService {
                         case 9 -> plugin.executeMenuAction(player, "playershop");
                         case 10 -> plugin.executeMenuAction(player, "report");
                         case 11 -> plugin.executeMenuAction(player, "barter");
+                        case 12 -> { }
                         default -> { }
                     }
                 }))
                 .build();
-        FloodgateApi.getInstance().sendForm(player.getUniqueId(), form);
+        send(player, form);
     }
 
     public void showTeleportForm(Player player) {
@@ -72,38 +76,88 @@ public final class BedrockFormService {
                 .toList();
 
         if (choices.isEmpty()) {
-            plugin.message(player, "no-other-players");
+            SimpleForm.Builder empty = SimpleForm.builder()
+                    .title("Minta Teleport")
+                    .content("Tidak ada player lain yang sedang online.");
+            addButton(empty, "Kembali", "back", "textures/items/arrow");
+            send(player, empty.validResultHandler(response -> sync(() -> showMainMenu(player))).build());
             return;
         }
 
-        List<String> names = choices.stream().map(PlayerChoice::name).toList();
-        boolean currentDisabled = plugin.requests().toggles().isDisabled(player.getUniqueId());
-
-        CustomForm form = CustomForm.builder()
+        SimpleForm.Builder builder = SimpleForm.builder()
                 .title("Minta Teleport")
-                .dropdown("Pilih Player", names)
-                .toggle("Bawa ke saya\nMATI: Pergi ke mereka | AKTIF: Bawa ke sini", false)
-                .toggle("Matikan Permintaan", currentDisabled)
-                .validResultHandler(response -> {
-                    int selected = response.asDropdown(0);
-                    boolean bringHere = response.asToggle(1);
-                    boolean disableIncoming = response.asToggle(2);
-                    sync(() -> {
-                        if (!player.isOnline()) return;
-                        plugin.requests().toggles().setDisabled(player.getUniqueId(), disableIncoming);
-                        if (selected < 0 || selected >= choices.size()) return;
-                        PlayerChoice choice = choices.get(selected);
-                        Player target = Bukkit.getPlayer(choice.uuid());
-                        if (target == null) {
-                            plugin.message(player, "player-not-found");
-                            return;
-                        }
-                        plugin.requests().create(player, target,
-                                bringHere ? TeleportMode.TARGET_TO_REQUESTER : TeleportMode.TO_TARGET);
-                    });
-                })
+                .content("Pilih player tujuan.");
+
+        for (PlayerChoice choice : choices) {
+            addButton(builder, choice.name(), "player", "textures/items/name_tag");
+        }
+        addButton(builder, "Kembali", "back", "textures/items/arrow");
+
+        int backIndex = choices.size();
+        SimpleForm form = builder.validResultHandler(response -> sync(() -> {
+                    if (!player.isOnline()) return;
+                    int selected = response.clickedButtonId();
+                    if (selected == backIndex) {
+                        showMainMenu(player);
+                        return;
+                    }
+                    if (selected < 0 || selected >= choices.size()) return;
+                    PlayerChoice choice = choices.get(selected);
+                    Player target = Bukkit.getPlayer(choice.uuid());
+                    if (target == null) {
+                        plugin.message(player, "player-not-found");
+                        showTeleportForm(player);
+                        return;
+                    }
+                    showTeleportMode(player, target);
+                }))
                 .build();
-        FloodgateApi.getInstance().sendForm(player.getUniqueId(), form);
+        send(player, form);
+    }
+
+    private void showTeleportMode(Player player, Player target) {
+        UUID targetId = target.getUniqueId();
+        String targetName = target.getName();
+        boolean disabled = plugin.requests().toggles().isDisabled(player.getUniqueId());
+
+        SimpleForm.Builder builder = SimpleForm.builder()
+                .title("Teleport • " + targetName)
+                .content("Pilih jenis permintaan teleport.");
+        addButton(builder, "Pergi ke " + targetName, "tpa", "textures/items/ender_pearl");
+        addButton(builder, "Bawa " + targetName + " ke saya", "tpahere", "textures/items/lead");
+        addButton(builder,
+                "Permintaan masuk: " + (disabled ? "NONAKTIF" : "AKTIF"),
+                "toggle", "textures/items/lever");
+        addButton(builder, "Kembali", "back", "textures/items/arrow");
+
+        SimpleForm form = builder.validResultHandler(response -> sync(() -> {
+                    if (!player.isOnline()) return;
+                    switch (response.clickedButtonId()) {
+                        case 0 -> createRequest(player, targetId, TeleportMode.TO_TARGET);
+                        case 1 -> createRequest(player, targetId, TeleportMode.TARGET_TO_REQUESTER);
+                        case 2 -> {
+                            boolean nowDisabled = plugin.requests().toggles().toggle(player.getUniqueId());
+                            plugin.message(player, nowDisabled ? "toggle-off" : "toggle-on");
+                            Player currentTarget = Bukkit.getPlayer(targetId);
+                            if (currentTarget != null) showTeleportMode(player, currentTarget);
+                            else showTeleportForm(player);
+                        }
+                        case 3 -> showTeleportForm(player);
+                        default -> { }
+                    }
+                }))
+                .build();
+        send(player, form);
+    }
+
+    private void createRequest(Player player, UUID targetId, TeleportMode mode) {
+        Player target = Bukkit.getPlayer(targetId);
+        if (target == null) {
+            plugin.message(player, "player-not-found");
+            showTeleportForm(player);
+            return;
+        }
+        plugin.requests().create(player, target, mode);
     }
 
     public void showIncomingRequest(Player target, Player requester, TeleportMode mode) {
@@ -122,7 +176,22 @@ public final class BedrockFormService {
                     else plugin.requests().deny(target);
                 }))
                 .build();
-        FloodgateApi.getInstance().sendForm(target.getUniqueId(), form);
+        send(target, form);
+    }
+
+    private void addButton(SimpleForm.Builder builder, String text, String iconKey, String fallbackPath) {
+        if (plugin.getConfig().getBoolean("bedrock-icons.enabled", true)) {
+            String path = plugin.getConfig().getString("bedrock-icons." + iconKey, fallbackPath);
+            if (path != null && !path.isBlank()) {
+                builder.button(text, FormImage.Type.PATH, path);
+                return;
+            }
+        }
+        builder.button(text);
+    }
+
+    private void send(Player player, org.geysermc.cumulus.form.Form form) {
+        FloodgateApi.getInstance().sendForm(player.getUniqueId(), form);
     }
 
     private void sync(Runnable runnable) {

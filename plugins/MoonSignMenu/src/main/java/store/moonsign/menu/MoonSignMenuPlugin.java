@@ -13,6 +13,7 @@ import store.moonsign.menu.command.MenuCommand;
 import store.moonsign.menu.command.TeleportCommands;
 import store.moonsign.menu.form.BedrockFormService;
 import store.moonsign.menu.gui.JavaMenuService;
+import store.moonsign.menu.item.MemberBookService;
 import store.moonsign.menu.tp.TeleportRequestManager;
 import store.moonsign.menu.tp.ToggleStore;
 import store.moonsign.menu.util.Colors;
@@ -23,17 +24,21 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
     private TeleportRequestManager requestManager;
     private BedrockFormService formService;
     private JavaMenuService javaMenuService;
+    private MemberBookService memberBookService;
     private NamespacedKey playerKey;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         getDataFolder().mkdirs();
         playerKey = new NamespacedKey(this, "target-player");
 
         ToggleStore toggleStore = new ToggleStore(this);
         requestManager = new TeleportRequestManager(this, toggleStore);
         javaMenuService = new JavaMenuService(this);
+        memberBookService = new MemberBookService(this);
 
         if (Bukkit.getPluginManager().isPluginEnabled("floodgate")) {
             try {
@@ -50,7 +55,9 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
         registerCommands();
         Bukkit.getPluginManager().registerEvents(this, this);
         Bukkit.getPluginManager().registerEvents(javaMenuService, this);
-        getLogger().info("MoonSignMenu v1.0.0 enabled.");
+        Bukkit.getPluginManager().registerEvents(memberBookService, this);
+        memberBookService.giveToOnlinePlayers();
+        getLogger().info("MoonSignMenu v1.1.0 enabled.");
     }
 
     private void registerCommands() {
@@ -60,6 +67,14 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
             PluginCommand command = Objects.requireNonNull(getCommand(commandName));
             command.setExecutor(tp);
             command.setTabCompleter(tp);
+        }
+    }
+
+    public void openMenu(Player player) {
+        if (formService != null && formService.isBedrock(player)) {
+            formService.showMainMenu(player);
+        } else {
+            javaMenuService.showMain(player);
         }
     }
 
@@ -73,6 +88,10 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
 
     public JavaMenuService javaMenus() {
         return javaMenuService;
+    }
+
+    public MemberBookService memberBook() {
+        return memberBookService;
     }
 
     public NamespacedKey playerKey() {
