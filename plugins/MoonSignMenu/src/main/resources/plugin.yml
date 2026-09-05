@@ -1,16 +1,16 @@
 name: MoonSignMenu
-version: '1.1.0'
+version: '1.2.0'
 main: store.moonsign.menu.MoonSignMenuPlugin
 api-version: '1.21'
 author: CADERA
-description: Native Bedrock member menu + internal TPA system for MOONSIGN.
+description: Config-driven Bedrock/Java member menu + internal TPA system for MOONSIGN.
 softdepend:
   - floodgate
 
 commands:
   menu:
-    description: Open MOONSIGN member menu.
-    usage: /menu
+    description: Open MOONSIGN member menu or reload its config.
+    usage: /menu [reload]
     permission: moonsignmenu.menu
   tpa:
     description: Request teleport to another player.
@@ -48,6 +48,8 @@ permissions:
     default: true
   moonsignmenu.tptoggle:
     default: true
+  moonsignmenu.admin.reload:
+    default: op
   moonsignmenu.bypass.cooldown:
     default: op
   moonsignmenu.bypass.disabled:
