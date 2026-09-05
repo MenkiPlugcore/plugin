@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.1 - 2026-09-06
+
+Hotfix for Paper 1.21.11 runtime compatibility.
+
+- Fixed `/party` GUI crash caused by an incompatible `ItemStack#setItemMeta` method signature in the original v1.0.0 local build.
+- GUI item creation now uses Paper/Bukkit `ItemStack#editMeta` and is built against the real Paper 1.21.11 API.
+- Added `/partychat` as an alias of `/pchat`.
+
 ## 1.0.0 - 2026-09-06
 
 Initial native Paper core release.
