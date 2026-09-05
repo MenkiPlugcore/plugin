@@ -9,13 +9,19 @@ Repository ini menggunakan struktur monorepo: setiap plugin berada di folder ter
 | Plugin | Versi | Platform | Java | Status |
 |---|---:|---|---:|---|
 | [MENKIAFK](plugins/MENKIAFK) | 1.1.0 Universal | Paper 1.21.11–26.2, Spigot 1.21.11 | 21+ | Aktif |
+| [MoonSignMenu](plugins/MoonSignMenu) | 1.0.0 | Paper 1.21.11 + Geyser/Floodgate | 21+ | Development |
 
 ## Struktur
 
 ```text
 plugin/
 ├── plugins/
-│   └── MENKIAFK/
+│   ├── MENKIAFK/
+│   │   ├── src/
+│   │   ├── pom.xml
+│   │   ├── README.md
+│   │   └── CHANGELOG.md
+│   └── MoonSignMenu/
 │       ├── src/
 │       ├── pom.xml
 │       ├── README.md
