@@ -15,6 +15,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
 
     @Override public void onEnable() {
         saveDefaultConfig();
+        migrateConfig();
         this.storage = new StorageBundle(this);
         this.parties = new PartyService(this, storage);
         this.war = new WarManager(this, parties, storage);
@@ -42,6 +43,19 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             }
         }
         getLogger().info("MENKIESTESParty v" + getDescription().getVersion() + " enabled. Local YAML storage; Party War world=" + getConfig().getString("war.score-world", "world"));
+    }
+
+    private void migrateConfig() {
+        String marker = "migrations.level1-slot-cap-v1_0_4";
+        if (getConfig().getBoolean(marker, false)) return;
+
+        int current = getConfig().getInt("levels.1.slots", 5);
+        if (current > 5) {
+            getConfig().set("levels.1.slots", 5);
+            getLogger().info("Config migration: Party Level 1 member cap changed from " + current + " to 5.");
+        }
+        getConfig().set(marker, true);
+        saveConfig();
     }
 
     @Override public void onDisable() { flush(); }
