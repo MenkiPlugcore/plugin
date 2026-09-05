@@ -99,10 +99,6 @@ public final class BedrockFormService {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // EssentialsX Home Manager
-    // -------------------------------------------------------------------------
-
     private void showHomesMenu(Player player, String returnMenuId, String fallbackCommand) {
         EssentialsHomeService homes = plugin.homes();
         if (homes == null || !homes.available()) {
@@ -158,9 +154,8 @@ public final class BedrockFormService {
                 .input("Nama Home (" + used + "/" + limitText + ")", "contoh: rumah", "")
                 .closedOrInvalidResultHandler(() -> sync(() -> showHomesMenu(player, returnMenuId, fallbackCommand)))
                 .validResultHandler(response -> sync(() -> {
-                    String name = response.asInput(0);
-                    if (name == null) name = "";
-                    name = name.trim();
+                    String rawName = response.asInput(0);
+                    final String name = rawName == null ? "" : rawName.trim();
                     if (!HOME_NAME.matcher(name).matches()) {
                         plugin.message(player, "invalid-home-name");
                         showNewHomeForm(player, returnMenuId, fallbackCommand);
@@ -230,10 +225,6 @@ public final class BedrockFormService {
                 .build();
         send(player, form);
     }
-
-    // -------------------------------------------------------------------------
-    // Bedrock-friendly /pay
-    // -------------------------------------------------------------------------
 
     private void showPayPlayerSelect(Player player, String returnMenuId) {
         List<PlayerChoice> choices = onlineTargets(player);
@@ -311,10 +302,6 @@ public final class BedrockFormService {
         send(player, form);
     }
 
-    // -------------------------------------------------------------------------
-    // Bedrock-friendly AxTrade
-    // -------------------------------------------------------------------------
-
     private void showTradeMenu(Player player, String returnMenuId) {
         SimpleForm.Builder builder = SimpleForm.builder()
                 .title("Barter • AxTrade")
@@ -385,10 +372,6 @@ public final class BedrockFormService {
             plugin.dispatchPlayerTemplate(player, command, Map.of("%target%", target.getName()));
         })).build());
     }
-
-    // -------------------------------------------------------------------------
-    // Internal TPA
-    // -------------------------------------------------------------------------
 
     public void showTeleportForm(Player player) {
         showTeleportForm(player, "main");
