@@ -1,0 +1,29 @@
+name: MENKIESTESParty
+version: 1.0.0
+main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
+api-version: '1.21'
+author: CADERA
+description: Native Paper Party system with quests, relic progression, open-world Party War, season and rewards.
+softdepend: [PlaceholderAPI, GriefPrevention]
+commands:
+  party:
+    aliases: [p, parties]
+    description: Main Party command
+    usage: /party
+  pchat:
+    aliases: [pc]
+    description: Party chat
+    usage: /pchat <message>
+  partywar:
+    description: Party War command
+    usage: /partywar
+  partyseason:
+    description: Party Season command
+    usage: /partyseason
+  partyhall:
+    description: Party Reward Hall command
+    usage: /partyhall
+permissions:
+  menkiestesparty.admin:
+    description: Full MENKIESTESParty administration
+    default: op

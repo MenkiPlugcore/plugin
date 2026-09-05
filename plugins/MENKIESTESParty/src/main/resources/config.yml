@@ -1,0 +1,82 @@
+prefix: '&b&lPARTY &8»&r'
+
+party:
+  min-name-length: 3
+  max-name-length: 16
+  max-members: 20
+  invite-expire-seconds: 60
+  home-delay-seconds: 3
+
+levels:
+  1:
+    reputation: 0
+    slots: 8
+  2:
+    reputation: 250
+    slots: 10
+  3:
+    reputation: 750
+    slots: 12
+  4:
+    reputation: 1500
+    slots: 15
+  5:
+    reputation: 3000
+    slots: 20
+
+quests:
+  mining:
+    goal: 500
+    reputation: 100
+  hunter:
+    goal: 100
+    reputation: 120
+  farmer:
+    goal: 300
+    reputation: 80
+  ignore-player-placed-mining: true
+  placed-ore-memory-cap: 3000
+
+weekly-reset:
+  enabled: true
+  day: MONDAY
+  time: '12:00'
+
+# Relic sederhana: +1 progress untuk setiap Weekly Quest Party yang selesai.
+# Progress tidak direset mingguan dan tidak memberi buff gameplay.
+relic:
+  level-2-missions: 3
+  level-3-missions: 9
+  level-4-missions: 18
+  level-5-missions: 30
+
+war:
+  score-world: world
+  default-duration-minutes: 30
+  default-target-points: 30
+  prepare-minutes: 10
+  kill-points: 1
+  owner-kill-points: 2
+  same-victim-cooldown-minutes: 5
+  combat-logout-points: true
+  combat-logout-window-seconds: 20
+  min-participation-minutes: 5
+  lock-membership-during-active: true
+  claim-pvp-override: true
+  season-points: 10
+  reward:
+    reputation: 500
+    chests-per-member: 1
+    diamonds: 8
+    emeralds: 16
+    gold-ingots: 32
+    golden-apples: 2
+
+season:
+  enabled-default: true
+  default-name: Season_1
+  champion-reputation: 1000
+  champion-chests-per-member: 2
+
+reward-hall:
+  enabled: true

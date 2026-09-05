@@ -2,7 +2,7 @@
 
 Koleksi plugin Minecraft custom buatan **MenkiPlugcore / MENKIESTES**.
 
-Repository ini menggunakan struktur monorepo: setiap plugin berada di folder terpisah dan dapat dibuild secara mandiri. Tujuannya supaya source code, riwayat versi, CI build, dan distribusi ke platform seperti Modrinth tetap rapi saat jumlah plugin bertambah.
+Repository ini menggunakan struktur monorepo: setiap plugin berada di folder terpisah dan dapat dibuild secara mandiri. Tujuannya supaya source code, riwayat versi, CI build, dan distribusi tetap rapi saat jumlah plugin bertambah.
 
 ## Plugin Catalog
 
@@ -10,6 +10,7 @@ Repository ini menggunakan struktur monorepo: setiap plugin berada di folder ter
 |---|---:|---|---:|---|
 | [MENKIAFK](plugins/MENKIAFK) | 1.1.0 Universal | Paper 1.21.11–26.2, Spigot 1.21.11 | 21+ | Aktif |
 | [MoonSignMenu](plugins/MoonSignMenu) | 1.2.0 | Paper 1.21.11 + Geyser/Floodgate | 21+ | Aktif |
+| [MENKIESTESParty](plugins/MENKIESTESParty) | 1.0.0 Core | Paper 1.21.x / 1.21.11 | 21+ | Aktif |
 
 ## Struktur
 
@@ -17,13 +18,11 @@ Repository ini menggunakan struktur monorepo: setiap plugin berada di folder ter
 plugin/
 ├── plugins/
 │   ├── MENKIAFK/
-│   │   ├── src/
-│   │   ├── pom.xml
-│   │   ├── README.md
-│   │   └── CHANGELOG.md
-│   └── MoonSignMenu/
+│   ├── MoonSignMenu/
+│   └── MENKIESTESParty/
 │       ├── src/
-│       ├── pom.xml
+│       ├── build.gradle.kts
+│       ├── settings.gradle.kts
 │       ├── README.md
 │       └── CHANGELOG.md
 └── .github/workflows/
@@ -31,14 +30,14 @@ plugin/
 
 ## Build
 
-Setiap plugin dapat dibuild dari folder masing-masing dengan Maven:
+Setiap plugin dapat dibuild dari folder masing-masing. Plugin Maven menggunakan `mvn clean package`, sedangkan MENKIESTESParty menggunakan Gradle:
 
 ```bash
-cd plugins/NAMA-PLUGIN
-mvn clean package
+cd plugins/MENKIESTESParty
+gradle clean build
 ```
 
-GitHub Actions juga akan melakukan compile-check dan menghasilkan artifact JAR untuk plugin yang memiliki workflow.
+GitHub Actions melakukan compile-check dan menghasilkan artifact JAR untuk plugin yang memiliki workflow.
 
 ## Distribusi
 
