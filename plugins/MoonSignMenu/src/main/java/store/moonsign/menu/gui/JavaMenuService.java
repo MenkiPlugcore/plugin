@@ -43,7 +43,7 @@ public final class JavaMenuService implements Listener {
     }
 
     public void showPlayerSelect(Player player) {
-        List<Player> players = Bukkit.getOnlinePlayers().stream()
+        List<? extends Player> players = Bukkit.getOnlinePlayers().stream()
                 .filter(other -> !other.getUniqueId().equals(player.getUniqueId()))
                 .toList();
         if (players.isEmpty()) {
