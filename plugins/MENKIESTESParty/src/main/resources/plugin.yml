@@ -1,5 +1,5 @@
 name: MENKIESTESParty
-version: 1.0.0
+version: 1.0.1
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
@@ -11,7 +11,7 @@ commands:
     description: Main Party command
     usage: /party
   pchat:
-    aliases: [pc]
+    aliases: [pc, partychat]
     description: Party chat
     usage: /pchat <message>
   partywar:
