@@ -31,18 +31,36 @@ public final class BedrockFormService {
         SimpleForm form = SimpleForm.builder()
                 .title("MOONSIGN • Menu Member")
                 .content("Pilih fitur yang ingin kamu buka.")
-                .button("🌐 Minta TP", response -> sync(() -> showTeleportForm(player)))
-                .button("🌀 Warp", response -> sync(() -> plugin.executeMenuAction(player, "warp")))
-                .button("🚪 Player Warp", response -> sync(() -> plugin.executeMenuAction(player, "pwarp")))
-                .button("🛏 Set Home", response -> sync(() -> plugin.executeMenuAction(player, "sethome")))
-                .button("🗺 Tanah", response -> sync(() -> plugin.executeMenuAction(player, "land")))
-                .button("💸 Transfer", response -> sync(() -> plugin.executeMenuAction(player, "transfer")))
-                .button("🏦 Bank", response -> sync(() -> plugin.executeMenuAction(player, "bank")))
-                .button("🛡 Klan / Team", response -> sync(() -> plugin.executeMenuAction(player, "team")))
-                .button("🛒 Toko", response -> sync(() -> plugin.executeMenuAction(player, "shop")))
-                .button("🏪 Player Shop", response -> sync(() -> plugin.executeMenuAction(player, "playershop")))
-                .button("🚨 Lapor", response -> sync(() -> plugin.executeMenuAction(player, "report")))
-                .button("🔄 Barter", response -> sync(() -> plugin.executeMenuAction(player, "barter")))
+                .button("🌐 Minta TP")
+                .button("🌀 Warp")
+                .button("🚪 Player Warp")
+                .button("🛏 Set Home")
+                .button("🗺 Tanah")
+                .button("💸 Transfer")
+                .button("🏦 Bank")
+                .button("🛡 Klan / Team")
+                .button("🛒 Toko")
+                .button("🏪 Player Shop")
+                .button("🚨 Lapor")
+                .button("🔄 Barter")
+                .validResultHandler(response -> sync(() -> {
+                    if (!player.isOnline()) return;
+                    switch (response.clickedButtonId()) {
+                        case 0 -> showTeleportForm(player);
+                        case 1 -> plugin.executeMenuAction(player, "warp");
+                        case 2 -> plugin.executeMenuAction(player, "pwarp");
+                        case 3 -> plugin.executeMenuAction(player, "sethome");
+                        case 4 -> plugin.executeMenuAction(player, "land");
+                        case 5 -> plugin.executeMenuAction(player, "transfer");
+                        case 6 -> plugin.executeMenuAction(player, "bank");
+                        case 7 -> plugin.executeMenuAction(player, "team");
+                        case 8 -> plugin.executeMenuAction(player, "shop");
+                        case 9 -> plugin.executeMenuAction(player, "playershop");
+                        case 10 -> plugin.executeMenuAction(player, "report");
+                        case 11 -> plugin.executeMenuAction(player, "barter");
+                        default -> { }
+                    }
+                }))
                 .build();
         FloodgateApi.getInstance().sendForm(player.getUniqueId(), form);
     }
