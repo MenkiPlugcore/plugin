@@ -1,0 +1,76 @@
+name: MoonSignMenu Build & Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'plugins/MoonSignMenu/**'
+      - '.github/workflows/moonsignmenu-build.yml'
+  pull_request:
+    paths:
+      - 'plugins/MoonSignMenu/**'
+      - '.github/workflows/moonsignmenu-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/MoonSignMenu
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: plugins/MoonSignMenu/pom.xml
+
+      - name: Build MoonSignMenu
+        run: mvn --batch-mode --no-transfer-progress clean package
+
+      - name: Read version
+        shell: bash
+        run: |
+          VERSION="$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "TAG=moonsignmenu-v$VERSION" >> "$GITHUB_ENV"
+          echo "JAR=plugins/MoonSignMenu/target/MoonSignMenu-$VERSION.jar" >> "$GITHUB_ENV"
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MoonSignMenu-${{ env.VERSION }}
+          path: ${{ env.JAR }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; skipping duplicate release."
+            exit 0
+          fi
+
+          gh release create "$TAG" "$JAR" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "MoonSignMenu v$VERSION" \
+            --notes-file plugins/MoonSignMenu/CHANGELOG.md \
+            --latest
