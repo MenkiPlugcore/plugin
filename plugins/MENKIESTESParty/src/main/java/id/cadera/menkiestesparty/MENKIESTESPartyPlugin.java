@@ -10,6 +10,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private WarManager war;
     private SeasonManager season;
     private RewardHallManager hall;
+    private PartyManageGui partyGui;
     private boolean dirty;
 
     @Override public void onEnable() {
@@ -19,6 +20,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.war = new WarManager(this, parties, storage);
         this.season = new SeasonManager(this, parties, storage);
         this.hall = new RewardHallManager(this, parties, storage);
+        this.partyGui = new PartyManageGui(this, parties);
 
         PartyCommand executor = new PartyCommand(this, parties);
         for (String cmdName : new String[]{"party","pchat","partywar","partyseason","partyhall"}) {
@@ -26,6 +28,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             if (cmd != null) { cmd.setExecutor(executor); cmd.setTabCompleter(executor); }
         }
         Bukkit.getPluginManager().registerEvents(new PartyListener(this, parties, war), this);
+        Bukkit.getPluginManager().registerEvents(partyGui, this);
 
         Bukkit.getScheduler().runTaskTimer(this, () -> { war.tickSecond(); if (dirty) flush(); }, 20L, 20L);
         Bukkit.getScheduler().runTaskTimer(this, () -> { war.tickMinute(); parties.tickWeeklyReset(); }, 1200L, 1200L);
@@ -49,6 +52,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public WarManager war() { return war; }
     public SeasonManager season() { return season; }
     public RewardHallManager hall() { return hall; }
+    public PartyManageGui partyGui() { return partyGui; }
 
     public void reloadPluginConfig() {
         reloadConfig();
