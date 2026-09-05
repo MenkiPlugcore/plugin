@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.4 - 2026-09-06
+
+Balance and Reward Hall month-rollover update.
+
+- Party Level 1 member cap is reduced from 8 to 5.
+- Existing config files are migrated once on startup: any Level 1 slot value above 5 is capped to 5.
+- Existing Level 1 parties that already have more than 5 members are not auto-kicked; they cannot add more members until they are within the cap or level up.
+- Reward Hall planned-item queue remains persistent across month changes. September rewards can continue directly into October without rebuilding the queue.
+- Hall entry IDs still roll by month/week automatically, for example `2026-09-W4` -> `2026-10-W1`.
+
 ## 1.0.3 - 2026-09-06
 
 Reward planning and member-management update.
