@@ -3,7 +3,6 @@ package id.cadera.menkiestesparty;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,16 +32,14 @@ public final class Util {
 
     public static ItemStack item(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
+        item.editMeta(meta -> {
             meta.setDisplayName(color(name));
             if (lore != null && lore.length > 0) {
                 List<String> lines = new ArrayList<>();
                 Arrays.stream(lore).forEach(line -> lines.add(color(line)));
                 meta.setLore(lines);
             }
-            item.setItemMeta(meta);
-        }
+        });
         return item;
     }
 
