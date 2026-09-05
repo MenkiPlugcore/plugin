@@ -1,12 +1,14 @@
-# MoonSignMenu v1.2.0
+# MoonSignMenu v1.3.0
 
-Plugin Paper untuk MOONSIGN yang memberikan native Bedrock Forms melalui Floodgate, inventory GUI fallback untuk Java, Member Book, internal TPA, dan sekarang menu yang sepenuhnya dapat diatur dari `config.yml`.
+Plugin Paper untuk MOONSIGN yang memberikan native Bedrock Forms melalui Floodgate, inventory GUI fallback untuk Java, Member Book, internal TPA, menu config-driven, dan flow Bedrock klik-only untuk Home, Pay, serta AxTrade.
 
 ## Target
 
 - Paper 1.21.11
 - Java 21
 - Geyser + Floodgate untuk native Bedrock UI
+- EssentialsX untuk Home Manager
+- AxTrade untuk flow Barter
 
 ## Fitur utama
 
@@ -17,142 +19,137 @@ Plugin Paper untuk MOONSIGN yang memberikan native Bedrock Forms melalui Floodga
 - Tombol `Kembali` pada submenu internal.
 - Menu utama dan submenu config-driven.
 - Tambah/hapus/edit/reorder tombol tanpa compile ulang.
-- Button types: `command`, `teleport`, `submenu`, `close`.
-- Command dapat dijalankan sebagai player atau console.
-- Permission per tombol.
-- Bedrock icon path dan Java material per tombol.
-- Java menu pagination otomatis bila tombol banyak.
+- Button types: `command`, `teleport`, `homes`, `pay`, `trade`, `submenu`, `close`.
 - `/menu reload` untuk menerapkan perubahan config tanpa restart.
 
-## Install / Upgrade
+## Bedrock Home Manager
 
-1. Pastikan server memakai Java 21 + Paper 1.21.11.
-2. Install Geyser-Spigot dan Floodgate-Spigot untuk native UI Bedrock.
-3. Ganti JAR lama dengan `MoonSignMenu-1.2.0.jar`.
-4. Restart server satu kali untuk migrasi config.
-5. Setelah itu perubahan tombol dapat diterapkan dengan `/menu reload`.
+Gunakan `type: homes`. MoonSignMenu membaca data home dan limit langsung dari EssentialsX, lalu menyediakan:
 
-Saat upgrade dari v1.1, nilai `menu-actions` lama dan icon main menu lama akan dipindahkan ke struktur menu baru bila config belum memiliki `menu.main.buttons`.
+- jumlah home tersimpan / maksimum home;
+- `Set Home Baru` dengan input nama;
+- daftar semua home;
+- teleport ke home;
+- hapus home tertentu dengan konfirmasi;
+- dukungan `essentials.sethome.multiple.unlimited`.
 
-## Contoh tombol command
-
-```yaml
-menu:
-  main:
-    buttons:
-      team:
-        enabled: true
-        name: "Team"
-        type: "command"
-        command: "team"
-        executor: "player"
-        order: 80
-        icon: "textures/items/iron_sword"
-        java-material: "IRON_SWORD"
-        permission: ""
-
-      shop:
-        enabled: true
-        name: "Shop"
-        type: "command"
-        command: "shop"
-        executor: "player"
-        order: 90
-        icon: "textures/items/nether_star"
-        java-material: "NETHER_STAR"
-        permission: ""
-```
-
-Untuk UltimateTeams atau DGShop, cukup ubah `command` ke command pembuka GUI plugin yang dipakai server.
-
-## Menambah tombol baru
-
-Tambahkan section baru di `menu.main.buttons`:
+Contoh:
 
 ```yaml
-      enderchest:
-        enabled: true
-        name: "Ender Chest"
-        type: "command"
-        command: "ec"
-        executor: "player"
-        order: 105
-        icon: "textures/blocks/ender_chest_front"
-        java-material: "ENDER_CHEST"
-        permission: ""
-        lore:
-          - "&7Buka Ender Chest milikmu."
+sethome:
+  enabled: true
+  name: Home
+  type: homes
+  command: homes # fallback Java
+  icon: textures/items/bed_red
+  java-material: RED_BED
 ```
 
-`order` menentukan urutan tombol. `enabled: false` menyembunyikan tombol.
+Command Essentials dapat diubah:
+
+```yaml
+integrations:
+  essentials-home:
+    set-command: 'sethome %home%'
+    teleport-command: 'home %home%'
+    delete-command: 'delhome %home%'
+```
+
+## Bedrock Transfer / Pay
+
+Gunakan `type: pay`. Player Bedrock cukup:
+
+1. klik `Transfer`;
+2. pilih player online;
+3. ketik nominal;
+4. konfirmasi `BAYAR`.
+
+```yaml
+transfer:
+  enabled: true
+  name: Transfer
+  type: pay
+  command: pay # fallback Java
+```
+
+Template command:
+
+```yaml
+integrations:
+  pay:
+    command: 'pay %target% %amount%'
+```
+
+Nominal seperti `10000` dan format Indonesia `10.000` diterima.
+
+## Bedrock AxTrade / Barter
+
+Gunakan `type: trade`. Menu Barter menyediakan:
+
+- Kirim Permintaan Trade;
+- Terima Permintaan;
+- Tolak Permintaan;
+- Aktif/Nonaktif Permintaan;
+- player picker online;
+- tombol Kembali.
+
+MoonSignMenu menggunakan command resmi AxTrade secara default:
+
+```yaml
+integrations:
+  axtrade:
+    send-command: 'axtrade %target%'
+    accept-command: 'axtrade accept %target%'
+    deny-command: 'axtrade deny %target%'
+    toggle-command: 'axtrade toggle'
+```
+
+## Menu config-driven
+
+Contoh tombol command biasa:
+
+```yaml
+team:
+  enabled: true
+  name: Party
+  type: command
+  command: party
+  executor: player
+  order: 80
+  icon: textures/items/iron_sword
+  java-material: IRON_SWORD
+```
+
+Untuk DGShop, cukup ubah command tombol Shop ke command pembuka GUI yang digunakan server.
 
 ## Submenu
 
-Buat tombol pembuka submenu:
-
 ```yaml
-      player-menu:
-        enabled: true
-        name: "Menu Player"
-        type: "submenu"
-        submenu: "player"
-        order: 130
-        icon: "textures/items/name_tag"
-        java-material: "PLAYER_HEAD"
+player-menu:
+  enabled: true
+  name: Menu Player
+  type: submenu
+  submenu: player
+  order: 130
 ```
 
-Lalu definisikan submenu:
-
-```yaml
-menu:
-  submenus:
-    player:
-      title: "&dMenu Player"
-      content: "&7Fitur pribadi player."
-      back-menu: "main"
-      buttons:
-        homes:
-          enabled: true
-          name: "Homes"
-          type: "command"
-          command: "homes"
-          executor: "player"
-          order: 10
-          icon: "textures/items/bed_red"
-          java-material: "RED_BED"
-```
-
-Submenu MoonSignMenu otomatis mendapatkan tombol `Kembali`. GUI yang dibuka oleh plugin eksternal tetap mengikuti GUI plugin tersebut dan tidak dapat disisipi tombol Back oleh MoonSignMenu.
-
-## Permission tombol
-
-```yaml
-      vipshop:
-        enabled: true
-        name: "VIP Shop"
-        type: "command"
-        command: "vipshop"
-        permission: "moonsign.vipshop"
-```
-
-Dengan `menu.hide-buttons-without-permission: true`, player tanpa permission tidak akan melihat tombol tersebut.
+Submenu MoonSignMenu otomatis mendapatkan tombol `Kembali`.
 
 ## Command executor dan placeholder
 
-```yaml
-      daily:
-        enabled: true
-        name: "Daily Reward"
-        type: "command"
-        command: "reward give %player% daily"
-        executor: "console"
-```
+Command button dapat dijalankan sebagai `player` atau `console`.
 
-Placeholder command:
+Placeholder umum:
 
 - `%player%`
 - `%uuid%`
 - `%world%`
+
+Flow khusus juga memakai:
+
+- `%home%`
+- `%target%`
+- `%amount%`
 
 ## Command
 
@@ -166,22 +163,15 @@ Placeholder command:
 | `/tpdeny` | Tolak request |
 | `/tptoggle` | Matikan/aktifkan incoming request |
 
-## Permission
+## Upgrade dari v1.2
 
-Player default:
+Saat startup pertama v1.3, konfigurasi default lama akan dimigrasikan:
 
-- `moonsignmenu.menu`
-- `moonsignmenu.tpa`
-- `moonsignmenu.tpahere`
-- `moonsignmenu.tpaccept`
-- `moonsignmenu.tpdeny`
-- `moonsignmenu.tptoggle`
+- `sethome` command default -> `type: homes`;
+- `transfer` command default -> `type: pay`;
+- `barter` command default -> `type: trade`.
 
-Admin / bypass:
-
-- `moonsignmenu.admin.reload` (default OP)
-- `moonsignmenu.bypass.cooldown` (default OP)
-- `moonsignmenu.bypass.disabled` (default OP)
+Setting custom lain tidak disentuh. Restart server satu kali setelah mengganti JAR; edit config berikutnya cukup `/menu reload`.
 
 ## Build
 
@@ -192,5 +182,5 @@ mvn clean package
 Output:
 
 ```text
-target/MoonSignMenu-1.2.0.jar
+target/MoonSignMenu-1.3.0.jar
 ```
