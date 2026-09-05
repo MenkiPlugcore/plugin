@@ -1,5 +1,5 @@
 name: MENKIESTESParty
-version: 1.0.2
+version: 1.0.3
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
