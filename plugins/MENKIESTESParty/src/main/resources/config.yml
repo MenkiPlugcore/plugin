@@ -10,7 +10,7 @@ party:
 levels:
   1:
     reputation: 0
-    slots: 8
+    slots: 5
   2:
     reputation: 250
     slots: 10
@@ -80,4 +80,5 @@ season:
 
 reward-hall:
   enabled: true
+  # Antrean reward tidak reset saat bulan berganti. September -> Oktober tetap lanjut.
   max-planned-rewards: 12
