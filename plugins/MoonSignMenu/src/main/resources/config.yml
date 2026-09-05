@@ -1,4 +1,4 @@
-# MoonSignMenu v1.1.0
+# MoonSignMenu v1.2.0
 prefix: "&8[&dMOONSIGN&8] &r"
 
 teleport:
@@ -11,29 +11,17 @@ teleport:
     accepted: "ENTITY_PLAYER_LEVELUP"
     denied: "BLOCK_NOTE_BLOCK_BASS"
 
-# Native Bedrock form icons. These use vanilla Bedrock texture paths,
-# so a custom resource pack is not required by default.
+# Icons for built-in Bedrock TP pages.
+# Main-menu button icons are now configured per button under menu.*.buttons.
 bedrock-icons:
   enabled: true
   tpa: "textures/items/ender_pearl"
   tpahere: "textures/items/lead"
-  warp: "textures/items/compass_item"
-  pwarp: "textures/items/map_filled"
-  sethome: "textures/items/bed_red"
-  land: "textures/items/map_empty"
-  transfer: "textures/items/paper"
-  bank: "textures/items/gold_ingot"
-  team: "textures/items/iron_sword"
-  shop: "textures/items/nether_star"
-  playershop: "textures/items/name_tag"
-  report: "textures/items/book_writable"
-  barter: "textures/items/lead"
   toggle: "textures/items/lever"
   player: "textures/items/name_tag"
   back: "textures/items/arrow"
-  close: "textures/items/barrier"
 
-# Member Book is automatically given to players and opens /menu on right click.
+# Member Book automatically opens the member menu on right click.
 member-book:
   enabled: true
   give-on-join: true
@@ -46,20 +34,216 @@ member-book:
     - "&7Klik kanan untuk membuka Menu Member."
     - "&8Item menu pribadi MOONSIGN."
 
-# Commands used by buttons outside the built-in TP system.
-# Use an empty string to disable a button action.
-menu-actions:
-  warp: "warp"
-  pwarp: "pwarp"
-  sethome: "sethome"
-  land: "claimslist"
-  transfer: "pay"
-  bank: "bank"
-  team: "team"
-  shop: "shop"
-  playershop: "ah"
-  report: "report"
-  barter: "trade"
+# Fully config-driven member menu.
+# Button types:
+#   command  = run any player/console command
+#   teleport = open MoonSignMenu's built-in TPA flow
+#   submenu  = open a submenu from menu.submenus
+#   close    = close the menu
+#
+# executor: player (default) or console
+# Placeholders in names/commands: %player%, %world%; commands also support %uuid%.
+menu:
+  hide-buttons-without-permission: true
+
+  main:
+    title: "&d&lMOONSIGN &fMenu Member"
+    content: "&7Pilih fitur yang ingin kamu buka."
+    buttons:
+      teleport:
+        enabled: true
+        name: "&bMinta TP"
+        type: "teleport"
+        order: 10
+        icon: "textures/items/ender_pearl"
+        java-material: "ENDER_PEARL"
+        permission: ""
+        lore:
+          - "&7Minta teleport ke player lain."
+
+      warp:
+        enabled: true
+        name: "Warp"
+        type: "command"
+        command: "warp"
+        executor: "player"
+        order: 20
+        icon: "textures/items/compass_item"
+        java-material: "COMPASS"
+        permission: ""
+
+      pwarp:
+        enabled: true
+        name: "Player Warp"
+        type: "command"
+        command: "pwarp"
+        executor: "player"
+        order: 30
+        icon: "textures/items/map_filled"
+        java-material: "FILLED_MAP"
+        permission: ""
+
+      sethome:
+        enabled: true
+        name: "Set Home"
+        type: "command"
+        command: "sethome"
+        executor: "player"
+        order: 40
+        icon: "textures/items/bed_red"
+        java-material: "RED_BED"
+        permission: ""
+
+      land:
+        enabled: true
+        name: "Tanah"
+        type: "command"
+        command: "claimslist"
+        executor: "player"
+        order: 50
+        icon: "textures/items/map_empty"
+        java-material: "GRASS_BLOCK"
+        permission: ""
+
+      transfer:
+        enabled: true
+        name: "Transfer"
+        type: "command"
+        command: "pay"
+        executor: "player"
+        order: 60
+        icon: "textures/items/paper"
+        java-material: "PAPER"
+        permission: ""
+
+      bank:
+        enabled: true
+        name: "Bank"
+        type: "command"
+        command: "bank"
+        executor: "player"
+        order: 70
+        icon: "textures/items/gold_ingot"
+        java-material: "GOLD_INGOT"
+        permission: ""
+
+      team:
+        enabled: true
+        name: "Team"
+        type: "command"
+        # Ganti dengan command pembuka GUI UltimateTeams di servermu bila berbeda.
+        command: "team"
+        executor: "player"
+        order: 80
+        icon: "textures/items/iron_sword"
+        java-material: "IRON_SWORD"
+        permission: ""
+
+      shop:
+        enabled: true
+        name: "Shop"
+        type: "command"
+        # Ganti dengan command pembuka DGShop di servermu bila berbeda.
+        command: "shop"
+        executor: "player"
+        order: 90
+        icon: "textures/items/nether_star"
+        java-material: "NETHER_STAR"
+        permission: ""
+
+      playershop:
+        enabled: true
+        name: "Player Shop"
+        type: "command"
+        command: "ah"
+        executor: "player"
+        order: 100
+        icon: "textures/items/name_tag"
+        java-material: "NAME_TAG"
+        permission: ""
+
+      report:
+        enabled: true
+        name: "Lapor"
+        type: "command"
+        command: "report"
+        executor: "player"
+        order: 110
+        icon: "textures/items/book_writable"
+        java-material: "WRITABLE_BOOK"
+        permission: ""
+
+      barter:
+        enabled: true
+        name: "Barter"
+        type: "command"
+        command: "trade"
+        executor: "player"
+        order: 120
+        icon: "textures/items/lead"
+        java-material: "LEAD"
+        permission: ""
+
+      # Contoh submenu. Ubah enabled ke true kalau mau menampilkannya.
+      player-menu:
+        enabled: false
+        name: "Menu Player"
+        type: "submenu"
+        submenu: "player"
+        order: 130
+        icon: "textures/items/name_tag"
+        java-material: "PLAYER_HEAD"
+        permission: ""
+
+      close:
+        enabled: true
+        name: "Tutup"
+        type: "close"
+        order: 999
+        icon: "textures/items/barrier"
+        java-material: "BARRIER"
+        permission: ""
+
+  # Kamu bebas menambah submenu baru di sini.
+  # Setiap submenu MoonSignMenu otomatis punya tombol Kembali.
+  submenus:
+    player:
+      title: "&dMenu Player"
+      content: "&7Fitur pribadi player."
+      back-menu: "main"
+      buttons:
+        homes:
+          enabled: true
+          name: "Homes"
+          type: "command"
+          command: "homes"
+          executor: "player"
+          order: 10
+          icon: "textures/items/bed_red"
+          java-material: "RED_BED"
+          permission: ""
+
+        balance:
+          enabled: true
+          name: "Balance"
+          type: "command"
+          command: "balance"
+          executor: "player"
+          order: 20
+          icon: "textures/items/gold_ingot"
+          java-material: "GOLD_INGOT"
+          permission: ""
+
+        enderchest:
+          enabled: true
+          name: "Ender Chest"
+          type: "command"
+          command: "ec"
+          executor: "player"
+          order: 30
+          icon: "textures/blocks/ender_chest_front"
+          java-material: "ENDER_CHEST"
+          permission: ""
 
 messages:
   no-permission: "&cKamu tidak punya izin untuk melakukan itu."
@@ -84,6 +268,9 @@ messages:
   toggle-on: "&aPermintaan teleport sekarang AKTIF."
   toggle-off: "&cPermintaan teleport sekarang NONAKTIF."
   no-other-players: "&eTidak ada player lain yang sedang online."
-  action-disabled: "&eFitur ini belum diaktifkan di config MoonSignMenu."
+  action-disabled: "&eFitur ini belum diaktifkan atau command tombol masih kosong."
+  menu-not-found: "&cMenu/submenu &f%menu% &ctidak ditemukan di config.yml."
+  invalid-button-type: "&cTipe tombol &f%type% &ctidak dikenali."
+  config-reloaded: "&aConfig MoonSignMenu berhasil direload."
   member-book-cannot-drop: "&eMember Book tidak dapat dibuang."
   member-book-inventory-full: "&eInventory penuh. Kosongkan satu slot agar Member Book bisa diberikan."
