@@ -1,0 +1,52 @@
+# MoonSignMenu v1.0.0
+prefix: "&8[&dMOONSIGN&8] &r"
+
+teleport:
+  request-expire-seconds: 30
+  request-cooldown-seconds: 5
+  cancel-on-world-change: true
+  block-cross-world: false
+  sounds:
+    request: "BLOCK_NOTE_BLOCK_PLING"
+    accepted: "ENTITY_PLAYER_LEVELUP"
+    denied: "BLOCK_NOTE_BLOCK_BASS"
+
+# Commands used by buttons outside the built-in TP system.
+# Use an empty string to disable a button action.
+menu-actions:
+  warp: "warp"
+  pwarp: "pwarp"
+  sethome: "sethome"
+  land: "claimslist"
+  transfer: "pay"
+  bank: "bank"
+  team: "team"
+  shop: "shop"
+  playershop: "ah"
+  report: "report"
+  barter: "trade"
+
+messages:
+  no-permission: "&cKamu tidak punya izin untuk melakukan itu."
+  player-only: "&cCommand ini hanya untuk player."
+  player-not-found: "&cPlayer tidak ditemukan atau sedang offline."
+  cannot-target-self: "&cKamu tidak bisa mengirim request TP ke diri sendiri."
+  requests-disabled: "&c%player% sedang menonaktifkan permintaan teleport."
+  target-has-request: "&e%player% sudah punya permintaan teleport yang belum selesai."
+  cooldown: "&eTunggu &f%seconds%s &esebelum mengirim permintaan TP lagi."
+  request-sent-to: "&aPermintaan dikirim. &fKamu meminta teleport ke &d%player%&f."
+  request-sent-here: "&aPermintaan dikirim. &fKamu meminta &d%player% &fteleport ke kamu."
+  request-received-to: "&d%player% &fmeminta teleport ke lokasimu."
+  request-received-here: "&d%player% &fmeminta kamu teleport ke lokasinya."
+  request-expired-sender: "&ePermintaan teleport ke &f%player% &etelah kedaluwarsa."
+  request-expired-target: "&ePermintaan teleport dari &f%player% &etelah kedaluwarsa."
+  no-pending-request: "&cTidak ada permintaan teleport yang menunggu."
+  request-accepted: "&aPermintaan teleport diterima."
+  request-denied: "&cPermintaan teleport ditolak."
+  target-denied: "&c%player% menolak permintaan teleportmu."
+  teleported: "&aTeleport berhasil."
+  cross-world-blocked: "&cPermintaan teleport lintas world dinonaktifkan."
+  toggle-on: "&aPermintaan teleport sekarang AKTIF."
+  toggle-off: "&cPermintaan teleport sekarang NONAKTIF."
+  no-other-players: "&eTidak ada player lain yang sedang online."
+  action-disabled: "&eFitur ini belum diaktifkan di config MoonSignMenu."
