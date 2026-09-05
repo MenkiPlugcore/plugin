@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.2 - 2026-09-06
+
+Reward Hall participation and item-management update.
+
+- Reward Hall item is now configurable in-game with `/partyhall setitem` while holding the desired item.
+- Added `/partyhall item` and `/partyhall clearitem`.
+- Hall reward item is snapshotted when the War finishes so later admin edits do not alter an already-awarded Week.
+- Removed the single-recipient Owner selection flow.
+- Every eligible member of the winning Party can claim the Hall reward once.
+- Eligibility now requires the configured minimum participation time and an actual combat record against another Party during the War.
+- War history now persists per-player minutes, kills, points, deaths, combat participation and eligibility before runtime data is cleared.
+- `/partyhall` shows the player's eligibility, claim state and recorded War contribution.
+
 ## 1.0.1 - 2026-09-06
 
 Hotfix for Paper 1.21.11 runtime compatibility.
