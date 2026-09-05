@@ -30,6 +30,8 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        getConfig().options().copyDefaults(true);
+        saveConfig();
         getDataFolder().mkdirs();
         playerKey = new NamespacedKey(this, "target-player");
 
