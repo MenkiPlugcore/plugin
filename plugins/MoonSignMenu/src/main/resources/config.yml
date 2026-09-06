@@ -1,4 +1,4 @@
-# MoonSignMenu v1.3.0
+# MoonSignMenu v1.3.1
 config-version: 3
 prefix: '&8[&dMOONSIGN&8] &r'
 
@@ -28,10 +28,15 @@ bedrock-icons:
   trade-deny: textures/items/barrier
 
 # Member Book automatically opens the member menu on right click.
+# Default v1.3.1: khusus Bedrock dan slot hotbar paling kanan (index 8) dikunci untuk buku.
 member-book:
   enabled: true
+  bedrock-only: true
   give-on-join: true
   give-delay-ticks: 10
+  permanent-hotbar: true
+  prevent-move: true
+  enforce-interval-ticks: 20
   hotbar-slot: 8
   prevent-drop: true
   material: BOOK
