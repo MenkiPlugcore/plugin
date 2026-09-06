@@ -83,7 +83,8 @@ public final class MoonSignMenuPlugin extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(javaMenuService, this);
         Bukkit.getPluginManager().registerEvents(memberBookService, this);
         memberBookService.giveToOnlinePlayers();
-        getLogger().info("MoonSignMenu v1.3.0 enabled.");
+        memberBookService.startEnforcement();
+        getLogger().info("MoonSignMenu v1.3.1 enabled.");
     }
 
     private void migrateAndMergeConfig() {
