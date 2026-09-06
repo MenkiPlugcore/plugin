@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.3.1
+
+- Member Book is now Bedrock-only by default.
+- Reserved the configured hotbar slot for Member Book; default is slot `8` (far right).
+- Added permanent hotbar enforcement so the book is restored if another plugin or inventory action removes it.
+- Added move/swap/drag/offhand protection so Bedrock players cannot relocate the reserved book.
+- Existing Java-player Member Books are automatically cleaned up when `member-book.bedrock-only: true`.
+- If the reserved slot already contains an item, MoonSignMenu moves that item to a free storage slot before placing the book.
+- Added `member-book.bedrock-only`, `permanent-hotbar`, `prevent-move`, and `enforce-interval-ticks` config options.
+
 ## 1.3.0
 
 - Added Bedrock-native EssentialsX Home Manager (`type: homes`).
