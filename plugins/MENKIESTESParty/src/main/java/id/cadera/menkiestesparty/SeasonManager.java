@@ -45,7 +45,6 @@ public final class SeasonManager {
         db.season.set(base+".name",name()); db.season.set(base+".ended-at", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))); db.season.set(base+".champion",winner); db.season.set(base+".points", winner==null?0:points(winner));
         if (winner != null) {
             int rep = plugin.getConfig().getInt("season.champion-reputation",1000); parties.addRep(winner,rep);
-            int chests = plugin.getConfig().getInt("season.champion-chests-per-member",2); parties.addWarChestTickets(winner,chests);
             Bukkit.broadcastMessage(parties.prefix()+Util.color(" &d&lSEASON SELESAI! &fChampion: &b"+parties.display(winner)+" &8| &d"+points(winner)+" pts &8| &a+"+rep+" Rep"));
         }
         db.season.set("active",false); plugin.saveDataSoon();

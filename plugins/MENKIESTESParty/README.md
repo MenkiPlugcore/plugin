@@ -1,98 +1,61 @@
-# MENKIESTESParty v1.0.4
+# MENKIESTESParty v1.1.0
 
-Native Paper plugin port of the MENKIESTES Party system.
+Native Paper Party system untuk MENKIESTES/MOONSIGN, menggunakan penyimpanan YAML lokal.
 
-## Documentation
+## Update v1.1.0
 
-- [Command Wiki](docs/COMMANDS.md) — player, Owner, Officer, admin, Party War, Season, and Reward Hall commands.
-- [Changelog](CHANGELOG.md) — patch history and behavior changes.
+- Daily Party Mission ditambahkan sebagai progress bersama seluruh anggota Party.
+- Weekly Quest lama tetap aktif untuk progres Party Relic.
+- Party War sekarang fokus ke kompetisi skor/kill.
+- Pemenang Party War hanya menerima Party XP (`war.party-xp`, default 250).
+- Tidak ada War Chest, Party Hall, antrean item, atau reward item otomatis dari Party War.
+- Reward senjata/custom item diberikan manual oleh admin langsung ke perwakilan team.
+- `/partyhall`, `/party hall`, `/party claimchest`, dan `/party rewards` sudah tidak digunakan sebagai sistem reward.
+
+## Daily Mission
+
+Default:
+
+| Mission | Goal | Party XP |
+| --- | ---: | ---: |
+| Mining | 150 | 40 |
+| Hunter | 30 | 50 |
+| Farmer | 80 | 35 |
+
+Daily Mission reset otomatis ketika tanggal server berganti. Progress bersifat shared untuk satu Party.
+
+Command:
+
+- `/party daily`
+- `/partydaily`
+- `/partydaily resetall` — admin
+
+## Party War
+
+Admin:
+
+- `/partywar start [durasi] [target] [prepare]`
+- `/partywar finish`
+- `/partywar cancel`
+
+Player:
+
+- `/partywar status`
+- `/partywar top`
+- `/partywar hunt`
+
+War tetap menyimpan history, skor, kill, death, combat participation, dan pemenang. Reward fisik tidak dibuat plugin.
 
 ## Requirements
 
-- Paper 1.21.x (designed for Paper 1.21.11 / Java 21)
-- PlaceholderAPI optional
-- GriefPrevention optional
-- Skript NOT required
-- Database NOT required
+- Java 21
+- Paper 1.21.11
+- PlaceholderAPI opsional
 
-## Current core features
-
-- Party create / invite / accept / leave / disband
-- Owner / Officer / Member roles
-- GUI Invite Player and Manage Members
-- Party Home with delayed teleport
-- Party Chat
-- Reputation + Party Level 1-5 + member slot scaling
-- Weekly Mining / Hunter / Farmer quests
-- Member contribution tracking
-- Simple Party Relic Lv.1-5 from completed missions (3 / 9 / 18 / 30)
-- Open-world Party War in configured `world`; no special War world and no forced teleport
-- Kill points, Owner kill bonus, same-victim cooldown, combat-logout scoring
-- OP exclusion from War scoring / PvP interference
-- War tracker compass
-- War reward chest tickets and `/party claimchest`
-- Party Season points / wins / champion
-- Reward Hall with contribution eligibility and future reward queue
-- Reward Hall queue continues across month changes
-- PlaceholderAPI expansion `%mparty_*%`
-- Local YAML: `parties.yml`, `wars.yml`, `season.yml`, `hall.yml`
-
-## Party roles
-
-### Owner
-
-Full Party management. Can invite, kick, promote, demote, set Party Home, and disband.
-
-### Officer
-
-Can invite players, set Party Home, and kick regular Members. Cannot kick Owner / another Officer and cannot promote or demote.
-
-### Member
-
-Normal Party member access.
-
-## Member cap
-
-| Level | Member cap |
-|---:|---:|
-| 1 | 5 |
-| 2 | 10 |
-| 3 | 12 |
-| 4 | 15 |
-| 5 | 20 |
-
-## Important migration note
-
-The plugin does not automatically parse old Skript `variables.csv`. Back up `plugins/Skript/` before removing the legacy Party scripts. Existing plugin YAML data under `plugins/MENKIESTESParty/` should be preserved when replacing JAR versions.
-
-## Commands
-
-See the complete command and permission reference:
-
-**[docs/COMMANDS.md](docs/COMMANDS.md)**
-
-Main commands:
-
-- `/party`
-- `/pchat <message>`
-- `/partywar`
-- `/partyseason`
-- `/partyhall`
-
-## Admin permission
-
-```text
-menkiestesparty.admin
-```
-
-Default: OP.
-
-## Build from source
+Build:
 
 ```bash
 gradle clean build
 ```
 
-Output JAR is generated under `build/libs/`.
-
-This source is maintained in the `MenkiPlugcore/plugin` monorepo so future fixes, command changes, and version patches can be tracked through commits and changelog entries.
+Output berada di `build/libs/`.

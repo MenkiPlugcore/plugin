@@ -24,6 +24,7 @@ levels:
     reputation: 3000
     slots: 20
 
+# Weekly Quest lama tetap aktif untuk progres Party Relic.
 quests:
   mining:
     goal: 500
@@ -42,8 +43,22 @@ weekly-reset:
   day: MONDAY
   time: '12:00'
 
+# Daily Mission adalah progress bersama seluruh anggota Party.
+# Reset dilakukan otomatis saat tanggal server berganti.
+daily-missions:
+  enabled: true
+  mining:
+    goal: 150
+    party-xp: 40
+  hunter:
+    goal: 30
+    party-xp: 50
+  farmer:
+    goal: 80
+    party-xp: 35
+
 # Relic sederhana: +1 progress untuk setiap Weekly Quest Party yang selesai.
-# Progress tidak direset mingguan dan tidak memberi buff gameplay.
+# Daily Mission tidak menambah Relic; reward-nya khusus Party XP.
 relic:
   level-2-missions: 3
   level-3-missions: 9
@@ -63,22 +78,15 @@ war:
   min-participation-minutes: 5
   lock-membership-during-active: true
   claim-pvp-override: true
-  season-points: 10
-  reward:
-    reputation: 500
-    chests-per-member: 1
-    diamonds: 8
-    emeralds: 16
-    gold-ingots: 32
-    golden-apples: 2
+
+  # Satu-satunya reward otomatis Party War.
+  # Secara internal memakai reputation sebagai Party XP/level progress.
+  party-xp: 250
+
+  # Tidak ada chest/item/reward otomatis.
+  # Senjata/item pemenang diberikan manual oleh admin ke perwakilan team.
 
 season:
   enabled-default: true
   default-name: Season_1
   champion-reputation: 1000
-  champion-chests-per-member: 2
-
-reward-hall:
-  enabled: true
-  # Antrean reward tidak reset saat bulan berganti. September -> Oktober tetap lanjut.
-  max-planned-rewards: 12

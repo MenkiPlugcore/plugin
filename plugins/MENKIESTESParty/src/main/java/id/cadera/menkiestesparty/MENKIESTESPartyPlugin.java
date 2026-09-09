@@ -20,11 +20,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.parties = new PartyService(this, storage);
         this.war = new WarManager(this, parties, storage);
         this.season = new SeasonManager(this, parties, storage);
+        // v1.1 compatibility shell: class name kept for binary compatibility,
+        // but this component now owns Daily Party Missions. Party Hall is removed.
         this.hall = new RewardHallManager(this, parties, storage);
         this.partyGui = new PartyManageGui(this, parties);
 
         PartyCommand executor = new PartyCommand(this, parties);
-        for (String cmdName : new String[]{"party","pchat","partywar","partyseason","partyhall"}) {
+        for (String cmdName : new String[]{"party","pchat","partywar","partyseason"}) {
             PluginCommand cmd = getCommand(cmdName);
             if (cmd != null) { cmd.setExecutor(executor); cmd.setTabCompleter(executor); }
         }

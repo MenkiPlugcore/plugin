@@ -231,53 +231,27 @@ public final class WarManager {
         allParticipants.addAll(sessionDeaths.keySet());
         allParticipants.addAll(combatParticipants);
 
-        int minMinutes = plugin.getConfig().getInt("war.min-participation-minutes", 5);
-        Set<UUID> hallEligible = new HashSet<>();
         for (UUID uuid : allParticipants) {
             String pbase = base + ".participants." + uuid;
             String playerParty = parties.partyOf(uuid);
-            int minutes = participationMinutes.getOrDefault(uuid, 0);
-            int playerKills = sessionKills.getOrDefault(uuid, 0);
-            int points = sessionPoints.getOrDefault(uuid, 0);
-            int deaths = sessionDeaths.getOrDefault(uuid, 0);
-            boolean combatRecord = combatParticipants.contains(uuid);
-            boolean eligible = winner != null
-                    && winner.equals(playerParty)
-                    && minutes >= minMinutes
-                    && combatRecord;
-
             db.wars.set(pbase + ".name", Bukkit.getOfflinePlayer(uuid).getName());
             db.wars.set(pbase + ".party", playerParty);
-            db.wars.set(pbase + ".minutes", minutes);
-            db.wars.set(pbase + ".kills", playerKills);
-            db.wars.set(pbase + ".points", points);
-            db.wars.set(pbase + ".deaths", deaths);
-            db.wars.set(pbase + ".combat", combatRecord);
-            db.wars.set(pbase + ".eligible", eligible);
-
-            if (eligible) hallEligible.add(uuid);
+            db.wars.set(pbase + ".minutes", participationMinutes.getOrDefault(uuid, 0));
+            db.wars.set(pbase + ".kills", sessionKills.getOrDefault(uuid, 0));
+            db.wars.set(pbase + ".points", sessionPoints.getOrDefault(uuid, 0));
+            db.wars.set(pbase + ".deaths", sessionDeaths.getOrDefault(uuid, 0));
+            db.wars.set(pbase + ".combat", combatParticipants.contains(uuid));
         }
 
         if (winner != null) {
-            int rep = plugin.getConfig().getInt("war.reward.reputation", 500);
-            parties.addRep(winner, rep);
-
-            int chest = plugin.getConfig().getInt("war.reward.chests-per-member", 1);
-            for (UUID uuid : parties.members(winner)) {
-                if (participationMinutes.getOrDefault(uuid, 0) >= minMinutes) {
-                    String path = "players." + uuid + ".war-chests";
-                    int current = db.parties.getInt(path, 0);
-                    db.parties.set(path, Math.min(16, current + chest));
-                }
-            }
-
-            plugin.season().recordWarWin(winner, plugin.getConfig().getInt("war.season-points", 10));
+            int partyXp = Math.max(0, plugin.getConfig().getInt("war.party-xp", 250));
+            if (partyXp > 0) parties.addRep(winner, partyXp);
             Bukkit.broadcastMessage(parties.prefix() + Util.color(
                     " &6&lPARTY WAR SELESAI! &fPemenang: &b" + parties.display(winner) + " &8| &e" + best
-                            + " poin &8| &a+" + rep + " Rep &8| &6Hall eligible: &f" + hallEligible.size()));
-            plugin.hall().awardWar(winner, runId, hallEligible);
+                            + " poin &8| &b+" + partyXp + " Party XP &8| &eReward item diberikan manual oleh admin ke perwakilan team."));
         } else {
-            Bukkit.broadcastMessage(parties.prefix() + Util.color(" &6&lPARTY WAR SELESAI! &7Tidak ada pemenang."));
+            Bukkit.broadcastMessage(parties.prefix() + Util.color(
+                    " &6&lPARTY WAR SELESAI! &7Tidak ada pemenang. &eTidak ada reward otomatis."));
         }
 
         clearRuntime();

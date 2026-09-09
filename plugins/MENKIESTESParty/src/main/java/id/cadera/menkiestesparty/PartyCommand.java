@@ -27,7 +27,6 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
         if (cmd.equals("pchat")) return pchat(sender, args);
         if (cmd.equals("partywar")) return partyWar(sender, args);
         if (cmd.equals("partyseason")) return partySeason(sender, args);
-        if (cmd.equals("partyhall")) return partyHall(sender, args);
         return party(sender, args);
     }
 
@@ -105,17 +104,23 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
             case "quest", "quests" -> showQuest(p);
             case "relic" -> showRelic(p);
             case "top" -> showTop(p);
+            case "daily" -> plugin.hall().onCommand(p, getDailyCommand(), "partydaily", dropFirst(a));
             case "war" -> {
                 if (a.length >= 2 && a[1].equalsIgnoreCase("hunt")) plugin.war().hunt(p);
                 else if (a.length >= 2 && a[1].equalsIgnoreCase("top")) plugin.war().showTop(p);
                 else plugin.war().showStatus(p);
             }
-            case "claimchest", "rewards" -> parties.claimWarChest(p);
-            case "hall" -> handleHallPlayer(p, dropFirst(a));
+            case "claimchest", "rewards", "hall" -> p.sendMessage(parties.prefix() + Util.color(" &eParty Hall dan reward otomatis Party War telah dihapus. &7Reward item diberikan manual oleh admin."));
             case "addrep", "removerep", "setrep", "resetquest", "reload" -> adminParty(sender, sub, a);
             default -> p.sendMessage(parties.prefix() + Util.color(" &cSubcommand tidak dikenal. /party help"));
         }
         return true;
+    }
+
+    private Command getDailyCommand() {
+        Command command = plugin.getCommand("partydaily");
+        if (command == null) throw new IllegalStateException("partydaily command is missing from plugin.yml");
+        return command;
     }
 
     private String[] dropFirst(String[] input) {
@@ -231,38 +236,6 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    private boolean partyHall(CommandSender s, String[] a) {
-        if (!(s instanceof Player p)) {
-            s.sendMessage("Player only.");
-            return true;
-        }
-        handleHallPlayer(p, a);
-        return true;
-    }
-
-    private void handleHallPlayer(Player p, String[] a) {
-        if (a.length == 0) {
-            plugin.hall().show(p);
-            return;
-        }
-        switch (a[0].toLowerCase(Locale.ROOT)) {
-            case "claim" -> plugin.hall().claim(p);
-            case "plan", "queue", "items", "item", "reward" -> plugin.hall().showPlan(p);
-            case "setitem" -> {
-                int slot = a.length > 1 ? Util.parseInt(a[1], 1, 1, 99) : 1;
-                plugin.hall().setPlannedItem(p, slot);
-            }
-            case "additem" -> plugin.hall().appendPlannedItem(p);
-            case "removeitem", "delitem" -> {
-                if (a.length < 2) p.sendMessage(parties.prefix() + Util.color(" &c/partyhall removeitem <slot>"));
-                else plugin.hall().removePlannedItem(p, Util.parseInt(a[1], -1, -1, 99));
-            }
-            case "clearitem", "clearitems" -> plugin.hall().clearPlannedItems(p);
-            case "setcurrent" -> plugin.hall().setCurrentItem(p);
-            default -> p.sendMessage(parties.prefix() + Util.color(" &7/partyhall claim &8| &fplan &8| &fsetitem [slot] &8| &fadditem &8| &fremoveitem <slot> &8| &fclearitems &8| &fsetcurrent"));
-        }
-    }
-
     private void showRep(Player p) {
         String party = parties.partyOf(p.getUniqueId());
         if (party == null) {
@@ -324,12 +297,15 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
                 "&f/party contribution",
                 "&f/party rep | level | top",
                 "&f/party quest | relic",
+                "&f/party daily &7- Daily Party Mission",
+                "&f/partydaily &7- Alternatif Daily Mission",
                 "&f/party war [hunt/top]",
-                "&f/party claimchest",
-                "&f/party hall [claim]",
-                "&cAdmin Hall: &f/partyhall plan|setitem|additem|removeitem|clearitems|setcurrent",
                 "&f/pchat <pesan>")) {
             s.sendMessage(Util.color(line));
+        }
+        if (s.hasPermission("menkiestesparty.admin")) {
+            s.sendMessage(Util.color("&cAdmin Daily: &f/partydaily resetall"));
+            s.sendMessage(Util.color("&cReward Party War: &fmanual oleh admin ke perwakilan team"));
         }
     }
 
@@ -339,17 +315,10 @@ public final class PartyCommand implements CommandExecutor, TabCompleter {
             List<String> base = switch (command.getName().toLowerCase(Locale.ROOT)) {
                 case "partywar" -> List.of("status", "top", "hunt", "start", "finish", "cancel");
                 case "partyseason" -> List.of("status", "top", "start", "end");
-                case "partyhall" -> List.of("claim", "plan", "setitem", "additem", "removeitem", "clearitems", "setcurrent");
-                default -> List.of("create", "invite", "accept", "leave", "disband", "kick", "promote", "demote", "sethome", "home", "members", "manage", "contribution", "rep", "level", "top", "quest", "relic", "war", "claimchest", "hall", "help");
+                default -> List.of("create", "invite", "accept", "leave", "disband", "kick", "promote", "demote", "sethome", "home", "members", "manage", "contribution", "rep", "level", "top", "quest", "relic", "daily", "war", "help");
             };
             String q = args[0].toLowerCase(Locale.ROOT);
             return base.stream().filter(x -> x.startsWith(q)).toList();
-        }
-        if (command.getName().equalsIgnoreCase("partyhall") && args.length == 2 && args[0].equalsIgnoreCase("setitem")) {
-            List<String> slots = new ArrayList<>();
-            for (int i = 1; i <= 12; i++) slots.add(String.valueOf(i));
-            String q = args[1].toLowerCase(Locale.ROOT);
-            return slots.stream().filter(x -> x.startsWith(q)).toList();
         }
         return new ArrayList<>();
     }
