@@ -1,9 +1,9 @@
 name: MENKIESTESParty
-version: 1.5.1
+version: 1.6.0
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
-description: Modular Paper Party/Guild framework with hardened YAML/SQLite/MySQL migration, public API, progression, interaction GUI, contracts, diplomacy, recruitment, applications and Party War.
+description: Modular Paper Party/Guild framework with administration/moderation tooling, hardened optional storage, public API, progression, interactions and Party War.
 softdepend: [PlaceholderAPI, GriefPrevention, Vault]
 commands:
   party:
@@ -96,9 +96,28 @@ commands:
     aliases: [pstorage]
     description: Storage diagnostics, verified migration, rollback, durable flush and backup
     usage: /partystorage [status|verify|flush|backup|migrate|rollback]
+  partyadmin:
+    aliases: [padmin, mpartyadmin]
+    description: MENKIESTESParty administration and moderation tools
+    usage: /partyadmin [list|inspect|forcejoin|remove|transfer|rename|freeze|unfreeze|xp|repair|resetproject|resetcontract|export|archive|disband|audit|confirm]
 permissions:
   menkiestesparty.admin:
-    description: Full MENKIESTESParty administration
+    description: Full MENKIESTESParty administration; also bypasses granular admin checks
+    default: op
+  menkiestesparty.admin.inspect:
+    description: View Party admin browser, inspect data and export support snapshots
+    default: op
+  menkiestesparty.admin.modify:
+    description: Perform reversible/common Party administration changes
+    default: op
+  menkiestesparty.admin.dangerous:
+    description: Stage and confirm high-impact owner/reset/disband administration actions
+    default: op
+  menkiestesparty.admin.audit:
+    description: View bounded staff audit history
+    default: op
+  menkiestesparty.admin.gui:
+    description: Open the Party administration inventory GUI
     default: op
   menkiestesparty.gui.progression:
     description: Open the Party Progression GUI
