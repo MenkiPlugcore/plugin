@@ -43,10 +43,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          JAR="$(find build/libs -maxdepth 1 -name 'MENKIESTESParty-1.6.0.jar' -print -quit)"
-          test -n "$JAR"
+          VERSION="$(grep -E '^version:' src/main/resources/plugin.yml | head -n1 | cut -d':' -f2- | tr -d " '\"\r")"
+          test -n "$VERSION"
+          JAR="build/libs/MENKIESTESParty-${VERSION}.jar"
+          test -f "$JAR"
           test "$(find build/libs -maxdepth 1 -name '*.jar' | wc -l)" -eq 1
-          unzip -p "$JAR" plugin.yml | grep -q '^version: 1.6.0$'
+          unzip -p "$JAR" plugin.yml | grep -q "^version: ${VERSION}$"
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/api/MenkiPartyAPI.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/AdministrationManager.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/JdbcStorageBackend.class$'
@@ -63,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MENKIESTESParty-${{ github.sha }}
-          path: plugins/MENKIESTESParty/build/libs/MENKIESTESParty-1.6.0.jar
+          path: plugins/MENKIESTESParty/build/libs/MENKIESTESParty-*.jar
           if-no-files-found: error
 
   mysql-integration:
@@ -128,7 +130,64 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          JAR="artifact/MENKIESTESParty-1.6.0.jar"
+          JAR="$(find artifact -maxdepth 1 -name 'MENKIESTESParty-*.jar' -print -quit)"
+          test -n "$JAR"
           test -f "$JAR"
           java -cp "$JAR" id.cadera.menkiestesparty.compat.RuntimeCompatibilityProbe
           javap -verbose -classpath "$JAR" id.cadera.menkiestesparty.MENKIESTESPartyPlugin | grep -q 'major version: 65'
+
+  publish-release:
+    needs: [build-java21, mysql-integration, runtime-java25]
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download verified production JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: MENKIESTESParty-${{ github.sha }}
+          path: artifact
+
+      - name: Publish or refresh GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          VERSION="$(grep -E '^version:' plugins/MENKIESTESParty/src/main/resources/plugin.yml | head -n1 | cut -d':' -f2- | tr -d " '\"\r")"
+          test -n "$VERSION"
+
+          TAG="menkiestesparty-v${VERSION}"
+          NOTES="plugins/MENKIESTESParty/RELEASE_NOTES_v${VERSION}.md"
+          JAR="artifact/MENKIESTESParty-${VERSION}.jar"
+          CHECKSUM="${JAR}.sha256"
+
+          test -f "$NOTES"
+          test -f "$JAR"
+          unzip -p "$JAR" plugin.yml | grep -q "^version: ${VERSION}$"
+
+          TITLE="$(head -n1 "$NOTES" | sed 's/^# //')"
+          test -n "$TITLE"
+          sha256sum "$JAR" > "$CHECKSUM"
+
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release edit "$TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "$TITLE" \
+              --notes-file "$NOTES"
+            gh release upload "$TAG" "$JAR" "$CHECKSUM" \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+          else
+            gh release create "$TAG" "$JAR" "$CHECKSUM" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "$TITLE" \
+              --notes-file "$NOTES" \
+              --latest
+          fi
