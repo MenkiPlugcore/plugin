@@ -1,6 +1,7 @@
 package store.menkiestes.menkiafk.stats;
 
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import store.menkiestes.menkiafk.MenkiAfkPlugin;
@@ -8,6 +9,9 @@ import store.menkiestes.menkiafk.afk.AfkType;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -121,6 +125,7 @@ public final class StatsManager {
 
     private final MenkiAfkPlugin plugin;
     private final File statsFile;
+    private final File tempStatsFile;
     private final Map<UUID, StoredStats> entries = new HashMap<>();
     private final Map<UUID, ActiveSession> activeSessions = new HashMap<>();
 
@@ -128,6 +133,7 @@ public final class StatsManager {
     private int keepDailyDays = 35;
     private long minimumSessionMillis = 10_000L;
     private boolean dirty;
+    private boolean persistenceBlocked;
 
     public StatsManager(MenkiAfkPlugin plugin) {
         this.plugin = plugin;
@@ -135,6 +141,7 @@ public final class StatsManager {
             plugin.getLogger().warning("Tidak dapat membuat folder data MENKIAFK.");
         }
         this.statsFile = new File(plugin.getDataFolder(), "stats.yml");
+        this.tempStatsFile = new File(plugin.getDataFolder(), "stats.yml.tmp");
         reloadSettings();
         load();
     }
@@ -220,6 +227,10 @@ public final class StatsManager {
         return entries.size();
     }
 
+    public synchronized boolean isPersistenceHealthy() {
+        return !persistenceBlocked;
+    }
+
     public synchronized List<RankedEntry> leaderboard(Metric metric) {
         Set<UUID> ids = new HashSet<>(entries.keySet());
         ids.addAll(activeSessions.keySet());
@@ -266,6 +277,8 @@ public final class StatsManager {
     }
 
     public synchronized void saveNow() {
+        if (persistenceBlocked) return;
+
         pruneOldDays();
         long now = System.currentTimeMillis();
         YamlConfiguration yaml = new YamlConfiguration();
@@ -281,8 +294,7 @@ public final class StatsManager {
             ActiveSession active = activeSessions.get(id);
             if (active != null) {
                 persisted.lastAfkAt = Math.max(persisted.lastAfkAt, active.startedAt());
-                // Checkpoint active sessions without mutating RAM. If the server crashes,
-                // the latest autosave still preserves AFK time up to this checkpoint.
+                // Project an active session into the checkpoint without mutating RAM totals.
                 applySession(persisted, active.startedAt(), now, active.type());
             }
 
@@ -300,26 +312,45 @@ public final class StatsManager {
         }
 
         try {
-            yaml.save(statsFile);
+            // Write to a sibling temp file first so a process crash cannot leave stats.yml half-written.
+            yaml.save(tempStatsFile);
+            try {
+                Files.move(tempStatsFile.toPath(), statsFile.toPath(),
+                        StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException ignored) {
+                Files.move(tempStatsFile.toPath(), statsFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
             dirty = false;
         } catch (IOException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Gagal menyimpan stats.yml MENKIAFK.", exception);
+            plugin.getLogger().log(Level.SEVERE, "Gagal menyimpan stats.yml MENKIAFK secara aman. File lama tidak sengaja ditimpa sebagian.", exception);
         }
     }
 
     private void load() {
         if (!statsFile.isFile()) return;
 
-        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(statsFile);
-        ConfigurationSection players = yaml.getConfigurationSection("players");
-        if (players == null) return;
+        YamlConfiguration yaml = new YamlConfiguration();
+        try {
+            yaml.load(statsFile);
+        } catch (IOException | InvalidConfigurationException exception) {
+            handleCorruptStats(exception);
+            return;
+        }
 
+        ConfigurationSection players = yaml.getConfigurationSection("players");
+        if (players == null) {
+            dirty = false;
+            return;
+        }
+
+        boolean repaired = false;
         for (String key : players.getKeys(false)) {
             UUID id;
             try {
                 id = UUID.fromString(key);
             } catch (IllegalArgumentException ignored) {
                 plugin.getLogger().warning("Mengabaikan UUID stats tidak valid: " + key);
+                repaired = true;
                 continue;
             }
 
@@ -327,9 +358,20 @@ public final class StatsManager {
             StoredStats stats = new StoredStats(yaml.getString(root + ".name", shortUuid(id)));
             stats.totalMillis = Math.max(0L, yaml.getLong(root + ".total-millis", 0L));
             stats.sessions = Math.max(0, yaml.getInt(root + ".sessions", 0));
-            stats.manualSessions = Math.max(0, yaml.getInt(root + ".manual-sessions", 0));
-            stats.autoSessions = Math.max(0, yaml.getInt(root + ".auto-sessions", 0));
-            stats.longestMillis = Math.max(0L, yaml.getLong(root + ".longest-millis", 0L));
+
+            int rawManual = Math.max(0, yaml.getInt(root + ".manual-sessions", 0));
+            stats.manualSessions = Math.min(stats.sessions, rawManual);
+            if (stats.manualSessions != rawManual) repaired = true;
+
+            int rawAuto = Math.max(0, yaml.getInt(root + ".auto-sessions", 0));
+            int maxAuto = Math.max(0, stats.sessions - stats.manualSessions);
+            stats.autoSessions = Math.min(maxAuto, rawAuto);
+            if (stats.autoSessions != rawAuto) repaired = true;
+
+            long rawLongest = Math.max(0L, yaml.getLong(root + ".longest-millis", 0L));
+            stats.longestMillis = Math.min(stats.totalMillis, rawLongest);
+            if (stats.longestMillis != rawLongest) repaired = true;
+
             stats.lastAfkAt = Math.max(0L, yaml.getLong(root + ".last-afk-at", 0L));
 
             ConfigurationSection daily = yaml.getConfigurationSection(root + ".daily");
@@ -341,13 +383,34 @@ public final class StatsManager {
                         if (millis > 0L) stats.dailyMillis.put(date, millis);
                     } catch (Exception ignored) {
                         plugin.getLogger().warning("Mengabaikan tanggal stats tidak valid untuk " + stats.name + ": " + dateKey);
+                        repaired = true;
                     }
                 }
             }
             entries.put(id, stats);
         }
+
         pruneOldDays();
-        dirty = false;
+        dirty = dirty || repaired;
+        if (repaired) {
+            plugin.getLogger().warning("stats.yml berisi nilai tidak konsisten. Nilai yang aman telah diperbaiki di memory dan akan dirapikan pada save berikutnya.");
+        }
+    }
+
+    private void handleCorruptStats(Exception cause) {
+        File quarantine = new File(plugin.getDataFolder(), "stats-corrupt-" + System.currentTimeMillis() + ".yml");
+        try {
+            Files.move(statsFile.toPath(), quarantine.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            dirty = false;
+            plugin.getLogger().log(Level.SEVERE,
+                    "stats.yml tidak dapat dibaca dan dipindahkan ke " + quarantine.getName()
+                            + ". MENKIAFK tetap berjalan dengan statistik baru; file rusak tidak dihapus.", cause);
+        } catch (IOException moveException) {
+            persistenceBlocked = true;
+            plugin.getLogger().log(Level.SEVERE,
+                    "stats.yml tidak dapat dibaca dan gagal diamankan. Penulisan statistik dinonaktifkan untuk sesi server ini agar file lama tidak tertimpa.", cause);
+            plugin.getLogger().log(Level.SEVERE, "Gagal memindahkan stats.yml rusak.", moveException);
+        }
     }
 
     private Snapshot snapshotOf(UUID id, StoredStats stats) {
