@@ -92,7 +92,7 @@ public final class AfkManager {
                 : Text.plainReason(rawReason);
         long now = System.currentTimeMillis();
         sessions.put(player.getUniqueId(), new AfkSession(reason, now, AfkType.MANUAL));
-        statsManager.startSession(player, now);
+        statsManager.startSession(player, now, AfkType.MANUAL);
         lastActivity.put(player.getUniqueId(), now);
 
         long cooldown = Math.max(0L, plugin.getConfig().getLong("manual-afk.cooldown-seconds", 8L)) * 1000L;
@@ -115,7 +115,7 @@ public final class AfkManager {
                 "%seconds%", timeoutSeconds));
         long now = System.currentTimeMillis();
         sessions.put(player.getUniqueId(), new AfkSession(reason, now, AfkType.AUTO));
-        statsManager.startSession(player, now);
+        statsManager.startSession(player, now, AfkType.AUTO);
 
         if (plugin.getConfig().getBoolean("broadcast.on-afk", true)) {
             String msg = Text.replace(Text.cfg(plugin, "messages.auto-afk-broadcast"),
