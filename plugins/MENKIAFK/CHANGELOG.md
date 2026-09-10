@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.1 Universal — Production Candidate
+
+- Feature freeze: no new gameplay feature, scheduler, database, GUI, packet library, NMS access, economy dependency, or server-specific integration.
+- Added JUnit regression tests for the public API v1 contract, immutable snapshot behavior, legacy-session accounting, lifecycle event non-cancellability, and release metadata.
+- Added Java 21 and Java 25 CI regression matrix before the release build is allowed to run.
+- Added final JAR verification for embedded `plugin.yml` version/main/API baseline.
+- Added final JAR verification that all required public API v1 classes are present.
+- Added Java 21 classfile verification (major version 65).
+- Added checks preventing Bukkit/Paper and PlaceholderAPI provided dependencies from being bundled into the production JAR.
+- Added `jdeps` verification to reject NMS/CraftBukkit bytecode dependencies.
+- Added explicit Maven release channel metadata. `candidate` releases are published as GitHub Prereleases instead of Latest stable.
+- Added `PRODUCTION-CANDIDATE.md` with the remaining live Paper smoke-test checklist required before v1.6.0 Production Stable.
+- Preserved public API v1, commands, permissions, placeholders, config behavior, and `stats.yml` schema version 3.
+- Existing v1.2.0-v1.5.0 configuration/statistics data remains compatible.
+
 ## 1.5.0 Universal — Public API Update
 
 - Added a stable read-only `MenkiAfkAPI` service registered through Bukkit `ServicesManager`.
@@ -22,10 +37,10 @@
 - Fixed external namespaced AFK commands such as `/essentials:afk` being incorrectly treated as MENKIAFK's own toggle for activity handling.
 - Added crash-safer `stats.yml` writes using a sibling temporary file plus atomic replace when supported by the filesystem.
 - Added corrupt YAML protection: unreadable `stats.yml` is quarantined instead of being silently overwritten; if quarantine fails, writes are blocked for that server session to protect the original file.
-- Added downgrade protection: if `stats.yml` uses a schema newer than v1.4.1 supports, known fields are read best-effort but writes are blocked so the newer format is not overwritten.
+- Added downgrade protection: if `stats.yml` uses a schema newer than MENKIAFK supports, known fields are read best-effort but writes are blocked so the newer format is not overwritten.
 - Added safe normalization for inconsistent session counters and longest-session values loaded from `stats.yml`.
 - Added `Stats I/O: OK/BLOCKED` to `/menkiafk status`; failed saves also surface as an unhealthy I/O state until a later save succeeds.
-- `/menkiafk reload` now checkpoints statistics before applying new timezone/retention/autosave settings.
+- `/menkiafk reload` checkpoints statistics before applying new timezone/retention/autosave settings.
 - Shutdown logging no longer claims statistics were saved when persistence had been blocked for data protection.
 - No feature expansion, new scheduler, database, GUI, packet library, NMS access, economy dependency, or server-specific integration was added.
 - Preserved `stats.yml` schema v3 and backward compatibility with v1.2.0/v1.3.0/v1.4.0 data.
