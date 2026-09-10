@@ -286,7 +286,6 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public void reloadPluginConfig() {
         reloadConfig();
         if (messages != null) messages.reload();
-        if (administration != null) administration.reloadSettings();
         if (apiHardening != null) apiHardening.verifyCompatibility();
     }
 }
