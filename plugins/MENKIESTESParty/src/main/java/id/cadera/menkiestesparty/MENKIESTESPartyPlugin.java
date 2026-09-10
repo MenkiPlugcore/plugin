@@ -8,7 +8,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private StorageBundle storage;
     private PartyService parties;
     private ProgressionManager progression;
-    private ProgressionGui progressionGui;
+    private ProgressionGuiV122 progressionGui;
     private WarManager war;
     private SeasonManager season;
     private RewardHallManager hall;
@@ -27,7 +27,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         // this component only owns Daily Party Missions and legacy no-op methods.
         this.hall = new RewardHallManager(this, parties, storage);
         this.partyGui = new PartyManageGui(this, parties);
-        this.progressionGui = new ProgressionGui(this, parties, progression);
+        this.progressionGui = new ProgressionGuiV122(this, parties, progression);
 
         PartyCommand executor = new PartyCommand(this, parties);
         for (String cmdName : new String[]{"party","pchat","partywar","partyseason"}) {
@@ -82,6 +82,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().set(guiMarker, true);
             getLogger().info("Config migration: v1.2.1 progression GUI defaults merged into config.yml.");
         }
+
+        String polishMarker = "migrations.progression-gui-polish-v1_2_2";
+        if (!getConfig().getBoolean(polishMarker, false)) {
+            getConfig().options().copyDefaults(true);
+            getConfig().set(polishMarker, true);
+            getLogger().info("Config migration: v1.2.2 GUI safety/pagination defaults merged into config.yml.");
+        }
         saveConfig();
     }
 
@@ -91,7 +98,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public void flush() { if (storage != null) storage.saveAll(); dirty = false; }
     public PartyService parties() { return parties; }
     public ProgressionManager progression() { return progression; }
-    public ProgressionGui progressionGui() { return progressionGui; }
+    public ProgressionGuiV122 progressionGui() { return progressionGui; }
     public WarManager war() { return war; }
     public SeasonManager season() { return season; }
     public RewardHallManager hall() { return hall; }

@@ -93,10 +93,18 @@ modules:
   divisions: true
   identity: true
 
-# v1.2.1 - GUI progression optional. Command tetap berfungsi jika GUI dimatikan.
+# v1.2.2 - Progression GUI safety & usability.
+# Command tetap berfungsi jika GUI dimatikan.
 gui:
   progression:
     enabled: true
+    # Panjang visual progress bar di lore GUI. Range efektif 5-40.
+    progress-bar-width: 20
+    confirmations:
+      # Mencegah cancel Project karena salah klik.
+      project-cancel: true
+      # Mencegah Skill Point terpakai karena salah klik.
+      skill-unlock: true
 
 progression:
   projects:

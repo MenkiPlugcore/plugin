@@ -1,10 +1,77 @@
-# MENKIESTESParty v1.2.1
+# MENKIESTESParty v1.2.2
 
 Native Paper Party/Guild framework by CADERA. Designed for Paper 1.21.11 / Java 21 with local YAML storage and no required database.
 
-## v1.2.1 — Progression GUI Update
+## v1.2.2 — GUI & Safety Polish
 
-v1.2.1 adds an inventory-based interface for the v1.2 progression system while keeping every command available.
+v1.2.2 improves the v1.2 progression interface for public/server-wide use without changing existing Party data.
+
+### Pagination
+
+Progression menus now support large custom configurations instead of showing only the first inventory page:
+
+- Party Projects
+- Party Skill Tree nodes
+- Party Divisions
+- Division member manager
+- Division assignment menu
+
+Project, Skill and Division definitions can therefore grow beyond one GUI page while remaining configurable through `config.yml`.
+
+### Confirmation screens
+
+Risky GUI actions now have optional confirmation:
+
+- Cancel active Party Project
+- Unlock Party Skill / spend Skill Point
+
+```yaml
+gui:
+  progression:
+    confirmations:
+      project-cancel: true
+      skill-unlock: true
+```
+
+Commands are unchanged; these confirmations only protect inventory clicks.
+
+### Visual progression
+
+The GUI now shows progress bars for:
+
+- Party Level progress
+- Active Party Project progress
+- Dynamic Identity activity share
+
+Progress-bar width is configurable:
+
+```yaml
+gui:
+  progression:
+    progress-bar-width: 20
+```
+
+Effective range is 5-40 characters.
+
+Party Profile's Level item is now clickable and opens a Level Progression screen showing Level 1-5 requirements and member-slot limits.
+
+### Granular GUI permissions
+
+Role rules remain authoritative. Permissions are an additional layer that server owners can control with a permission plugin such as LuckPerms.
+
+- `menkiestesparty.gui.progression` — open Progression Hub
+- `menkiestesparty.gui.projects` — view Projects GUI
+- `menkiestesparty.gui.projects.manage` — start/cancel Projects from GUI; Owner/Officer rule still applies
+- `menkiestesparty.gui.skills` — view Skill Tree GUI
+- `menkiestesparty.gui.skills.unlock` — unlock Skills from GUI; Owner rule still applies
+- `menkiestesparty.gui.divisions` — view Divisions GUI
+- `menkiestesparty.gui.divisions.self` — self-select Division when enabled in config
+- `menkiestesparty.gui.divisions.manage` — assign member Divisions; Owner/Officer rule still applies
+- `menkiestesparty.gui.identity` — view Dynamic Identity GUI
+
+These permissions default to `true` for backwards compatibility and can be explicitly denied per player/group. `menkiestesparty.admin` bypasses progression GUI permission checks.
+
+## Progression Hub
 
 Open `/party` and use **Party Progression** to access:
 
@@ -14,11 +81,7 @@ Open `/party` and use **Party Progression** to access:
 - Party Divisions
 - Dynamic Party Identity
 
-Project start/cancel, Skill unlock, self-select Division, and Owner/Officer Division management can now be done from GUI.
-
-The obsolete Party Reward Hall button has been removed from the main Party GUI and replaced with the Progression Hub.
-
-The GUI is optional:
+The GUI remains optional:
 
 ```yaml
 gui:
@@ -114,11 +177,11 @@ modules:
   identity: true
 ```
 
-Core Party, Weekly Quest, Daily Mission, Party Relic, Party War and Season remain compatible with v1.1.0/v1.2.0 data.
+Core Party, Weekly Quest, Daily Mission, Party Relic, Party War and Season remain compatible with earlier v1.2 data.
 
 ## PlaceholderAPI
 
-Existing `%mparty_*%` placeholders remain. v1.2 adds:
+Existing `%mparty_*%` placeholders remain. Progression placeholders include:
 
 - `%mparty_identity%`
 - `%mparty_division%`
@@ -126,9 +189,9 @@ Existing `%mparty_*%` placeholders remain. v1.2 adds:
 - `%mparty_project%`
 - `%mparty_project_progress%`
 
-## Upgrade from v1.2.0
+## Upgrade from v1.2.1
 
-Replace the JAR and restart the server. Do not delete `plugins/MENKIESTESParty/`. Existing `parties.yml`, `wars.yml`, and `season.yml` remain valid. Missing v1.2.1 GUI defaults are merged into the existing `config.yml` on first startup.
+Replace the JAR and restart the server. Do not delete `plugins/MENKIESTESParty/`. Existing `parties.yml`, `wars.yml`, and `season.yml` remain valid. Missing v1.2.2 GUI defaults are merged into the existing `config.yml` on first startup.
 
 ## Requirements
 

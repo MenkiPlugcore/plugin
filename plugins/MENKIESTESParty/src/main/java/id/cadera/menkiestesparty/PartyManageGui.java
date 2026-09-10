@@ -39,9 +39,12 @@ public final class PartyManageGui implements Listener {
                 parties.canManage(player.getUniqueId()) ? "&7Klik untuk pilih player online." : "&cHanya Owner/Officer."));
         inv.setItem(13, Util.item(Material.CHEST, "&eManage Members",
                 "&7Lihat roster Party.", parties.canManage(player.getUniqueId()) ? "&7Klik member untuk manage." : "&7Mode lihat saja."));
+        String progressionState;
+        if (!plugin.progressionGui().enabled()) progressionState = "&cProgression GUI dinonaktifkan.";
+        else if (!plugin.progressionGui().canView(player)) progressionState = "&cKamu tidak punya permission GUI.";
+        else progressionState = "&aKlik untuk buka Progression Hub.";
         inv.setItem(15, Util.item(Material.NETHER_STAR, "&dParty Progression",
-                "&7Projects, Skill Tree, Divisions dan Identity.",
-                plugin.progressionGui().enabled() ? "&aKlik untuk buka Progression Hub." : "&cProgression GUI dinonaktifkan."));
+                "&7Projects, Skill Tree, Divisions dan Identity.", progressionState));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -106,7 +109,8 @@ public final class PartyManageGui implements Listener {
                 OfflinePlayer target = Bukkit.getOfflinePlayer(targetId);
                 parties.setRole(player, target, current == PartyService.Role.OFFICER ? PartyService.Role.MEMBER : PartyService.Role.OFFICER);
                 openMemberMenu(player);
-            } else if (event.getRawSlot() == 14 && plugin.progression().moduleEnabled("divisions")) {
+            } else if (event.getRawSlot() == 14 && plugin.progression().moduleEnabled("divisions")
+                    && plugin.progressionGui().canManageDivisions(player)) {
                 plugin.progressionGui().openMemberDivisionMenu(player, targetId);
             } else if (event.getRawSlot() == 15) {
                 parties.kick(player, Bukkit.getOfflinePlayer(targetId));
@@ -183,9 +187,8 @@ public final class PartyManageGui implements Listener {
                 inv.setItem(11, taggedItem(Material.YELLOW_DYE, "&eDemote Member", target, "&7Turunkan Officer menjadi Member."));
             }
         }
-        if (plugin.progression().moduleEnabled("divisions")) {
-            inv.setItem(14, taggedItem(Material.SHIELD, "&bSet Division", target,
-                    "&7Atur spesialisasi member ini."));
+        if (plugin.progression().moduleEnabled("divisions") && plugin.progressionGui().canManageDivisions(actor)) {
+            inv.setItem(14, taggedItem(Material.SHIELD, "&bSet Division", target, "&7Atur spesialisasi member ini."));
         }
         inv.setItem(15, taggedItem(Material.BARRIER, "&cKick Member", target, "&7Keluarkan dari Party."));
         inv.setItem(22, Util.item(Material.ARROW, "&eKembali", "&7Kembali ke roster."));

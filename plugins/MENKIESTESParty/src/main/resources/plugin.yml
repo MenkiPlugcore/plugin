@@ -1,5 +1,5 @@
 name: MENKIESTESParty
-version: 1.2.1
+version: 1.2.2
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
@@ -48,3 +48,30 @@ permissions:
   menkiestesparty.admin:
     description: Full MENKIESTESParty administration
     default: op
+  menkiestesparty.gui.progression:
+    description: Open the Party Progression GUI
+    default: true
+  menkiestesparty.gui.projects:
+    description: View Party Projects GUI
+    default: true
+  menkiestesparty.gui.projects.manage:
+    description: Start and cancel Party Projects from GUI; Party role rules still apply
+    default: true
+  menkiestesparty.gui.skills:
+    description: View Party Skill Tree GUI
+    default: true
+  menkiestesparty.gui.skills.unlock:
+    description: Unlock Party Skills from GUI; Owner rule still applies
+    default: true
+  menkiestesparty.gui.divisions:
+    description: View Party Divisions GUI
+    default: true
+  menkiestesparty.gui.divisions.self:
+    description: Self-select a Party Division from GUI when enabled in config
+    default: true
+  menkiestesparty.gui.divisions.manage:
+    description: Manage member Divisions from GUI; Party role rules still apply
+    default: true
+  menkiestesparty.gui.identity:
+    description: View Dynamic Party Identity GUI
+    default: true

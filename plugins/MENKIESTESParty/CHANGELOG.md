@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.2.2 - 2026-09-10
+
+GUI & Safety Polish.
+
+### Added
+
+- Pagination for custom Party Projects, Skill Tree nodes, Divisions, Division member management and member Division assignment.
+- Confirmation screen before cancelling an active Party Project.
+- Confirmation screen before spending a Party Skill Point.
+- Visual progress bars for Party Level, active Projects and Dynamic Identity activity shares.
+- Clickable Party Level progression screen from Party Profile.
+- Granular GUI permission nodes for Progression, Projects, Skill Tree, Divisions and Identity.
+- Separate action permissions for Project management, Skill unlock, Division self-select and Division management.
+- `gui.progression.progress-bar-width` config.
+- `gui.progression.confirmations.project-cancel` config.
+- `gui.progression.confirmations.skill-unlock` config.
+- v1.2.2 config migration that merges new GUI defaults without resetting Party data.
+
+### Changed
+
+- Progression Hub now visually marks modules or GUI sections that the player cannot access.
+- Division management buttons respect both Party role rules and Bukkit permissions.
+- Existing progression commands remain unchanged and continue working independently from GUI permissions.
+
+### Compatibility
+
+- Existing v1.2.1 Party data remains valid.
+- No database migration is required.
+- No new required dependency is added.
+
 ## 1.2.1 - 2026-09-10
 
 Progression GUI Update.
