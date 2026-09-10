@@ -43,15 +43,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          JAR="$(find build/libs -maxdepth 1 -name 'MENKIESTESParty-1.5.1.jar' -print -quit)"
+          JAR="$(find build/libs -maxdepth 1 -name 'MENKIESTESParty-1.6.0.jar' -print -quit)"
           test -n "$JAR"
           test "$(find build/libs -maxdepth 1 -name '*.jar' | wc -l)" -eq 1
-          unzip -p "$JAR" plugin.yml | grep -q '^version: 1.5.1$'
+          unzip -p "$JAR" plugin.yml | grep -q '^version: 1.6.0$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/api/MenkiPartyAPI.class$'
+          jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/AdministrationManager.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/JdbcStorageBackend.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/StorageIntegrity.class$'
           jar tf "$JAR" | grep -q '^org/sqlite/JDBC.class$'
           jar tf "$JAR" | grep -q '^com/mysql/cj/jdbc/Driver.class$'
+          jar tf "$JAR" | grep -q '^administration.yml$'
           jar tf "$JAR" | grep -q '^messages.yml$'
           jar tf "$JAR" | grep -q '^storage.yml$'
           java -cp "$JAR" id.cadera.menkiestesparty.compat.RuntimeCompatibilityProbe
@@ -61,7 +63,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MENKIESTESParty-${{ github.sha }}
-          path: plugins/MENKIESTESParty/build/libs/MENKIESTESParty-1.5.1.jar
+          path: plugins/MENKIESTESParty/build/libs/MENKIESTESParty-1.6.0.jar
           if-no-files-found: error
 
   mysql-integration:
@@ -126,7 +128,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          JAR="artifact/MENKIESTESParty-1.5.1.jar"
+          JAR="artifact/MENKIESTESParty-1.6.0.jar"
           test -f "$JAR"
           java -cp "$JAR" id.cadera.menkiestesparty.compat.RuntimeCompatibilityProbe
           javap -verbose -classpath "$JAR" id.cadera.menkiestesparty.MENKIESTESPartyPlugin | grep -q 'major version: 65'
