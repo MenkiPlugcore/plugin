@@ -1,7 +1,7 @@
 plugins { java }
 
 group = "id.cadera"
-version = "1.5.0"
+version = "1.5.1"
 
 repositories {
     mavenCentral()
@@ -13,8 +13,8 @@ dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.11.6")
 
-    // v1.5.0 ships database drivers in the plugin JAR so YAML remains fully
-    // offline and SQLite/MySQL do not require server-side driver installation.
+    // Database drivers are bundled so SQLite/MySQL remain optional but require
+    // no server-side driver installation or runtime network download.
     implementation("org.xerial:sqlite-jdbc:3.53.4.0")
     implementation("com.mysql:mysql-connector-j:26.7.0")
 

@@ -36,19 +36,20 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build + contract tests
+      - name: Build + API/storage contract tests
         run: gradle clean build --stacktrace
 
       - name: Verify production JAR
         shell: bash
         run: |
           set -euo pipefail
-          JAR="$(find build/libs -maxdepth 1 -name 'MENKIESTESParty-1.5.0.jar' -print -quit)"
+          JAR="$(find build/libs -maxdepth 1 -name 'MENKIESTESParty-1.5.1.jar' -print -quit)"
           test -n "$JAR"
           test "$(find build/libs -maxdepth 1 -name '*.jar' | wc -l)" -eq 1
-          unzip -p "$JAR" plugin.yml | grep -q '^version: 1.5.0$'
+          unzip -p "$JAR" plugin.yml | grep -q '^version: 1.5.1$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/api/MenkiPartyAPI.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/JdbcStorageBackend.class$'
+          jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/StorageIntegrity.class$'
           jar tf "$JAR" | grep -q '^org/sqlite/JDBC.class$'
           jar tf "$JAR" | grep -q '^com/mysql/cj/jdbc/Driver.class$'
           jar tf "$JAR" | grep -q '^messages.yml$'
@@ -60,11 +61,53 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: MENKIESTESParty-${{ github.sha }}
-          path: plugins/MENKIESTESParty/build/libs/MENKIESTESParty-1.5.0.jar
+          path: plugins/MENKIESTESParty/build/libs/MENKIESTESParty-1.5.1.jar
           if-no-files-found: error
 
+  mysql-integration:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: menkiestesparty_test
+          MYSQL_USER: menkiparty
+          MYSQL_PASSWORD: testpass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -prootpass"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    defaults:
+      run:
+        working-directory: plugins/MENKIESTESParty
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: MySQL backend integration test
+        env:
+          MENKI_TEST_MYSQL_URL: jdbc:mysql://127.0.0.1:3306/menkiestesparty_test?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+          MENKI_TEST_MYSQL_USER: menkiparty
+          MENKI_TEST_MYSQL_PASSWORD: testpass
+        run: gradle test --tests '*StorageBackendContractTest.mysqlBackendRoundTripsAndUpsertsDocuments' --stacktrace
+
   runtime-java25:
-    needs: build-java21
+    needs: [build-java21, mysql-integration]
     runs-on: ubuntu-latest
     steps:
       - name: Download production candidate
@@ -83,7 +126,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          JAR="artifact/MENKIESTESParty-1.5.0.jar"
+          JAR="artifact/MENKIESTESParty-1.5.1.jar"
           test -f "$JAR"
           java -cp "$JAR" id.cadera.menkiestesparty.compat.RuntimeCompatibilityProbe
           javap -verbose -classpath "$JAR" id.cadera.menkiestesparty.MENKIESTESPartyPlugin | grep -q 'major version: 65'

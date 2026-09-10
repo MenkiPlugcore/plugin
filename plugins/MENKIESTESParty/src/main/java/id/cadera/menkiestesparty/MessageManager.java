@@ -5,9 +5,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-/** v1.5.0 localization/messages facade. */
+/** v1.5.x localization/messages facade with non-destructive default merging. */
 public final class MessageManager {
     private final MENKIESTESPartyPlugin plugin;
     private final File file;
@@ -25,13 +28,14 @@ public final class MessageManager {
             String legacyPrefix = plugin.getConfig().getString("prefix");
             if (legacyPrefix != null && !legacyPrefix.isBlank()) {
                 messages.set("prefix", legacyPrefix);
-                save();
             }
         }
+        mergeDefaults();
     }
 
     public void reload() {
         this.messages = YamlConfiguration.loadConfiguration(file);
+        mergeDefaults();
     }
 
     public String prefix() {
@@ -59,6 +63,20 @@ public final class MessageManager {
 
     public void send(CommandSender sender, String key, Map<String, ?> placeholders) {
         sender.sendMessage(prefix() + " " + text(key, placeholders));
+    }
+
+    private void mergeDefaults() {
+        try (InputStream input = plugin.getResource("messages.yml")) {
+            if (input != null) {
+                YamlConfiguration defaults = YamlConfiguration.loadConfiguration(
+                        new InputStreamReader(input, StandardCharsets.UTF_8));
+                messages.setDefaults(defaults);
+                messages.options().copyDefaults(true);
+            }
+            save();
+        } catch (IOException failure) {
+            plugin.getLogger().warning("Unable to merge messages.yml defaults: " + failure.getMessage());
+        }
     }
 
     private void save() {

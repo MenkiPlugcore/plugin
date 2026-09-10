@@ -1,5 +1,5 @@
-# MENKIESTESParty v1.5.0 message file.
-# Legacy gameplay messages are kept compatible; new v1.5+ surfaces use this file.
+# MENKIESTESParty v1.5.1 message file.
+# Existing custom values are preserved; missing defaults are merged on startup.
 prefix: '&b&lPARTY &8»&r'
 
 common:
@@ -10,16 +10,36 @@ storage:
   header: '&b&lStorage Diagnostics'
   configured: '&7Configured: &f{backend}'
   active: '&7Active: &f{backend}'
+  schema: '&7Storage schema: &fv{version}'
   async: '&7Async writes: &f{value}'
   degraded: '&7Degraded/fallback: &f{value}'
-  pending: '&7Pending writes: &f{count}'
+  pending: '&7Pending writes: &f{count} &8(age {age} ms)'
+  queue: '&7Queue: &fsubmitted={submitted}, coalesced={coalesced}, success={success}, failed={failed}, last-delay={delay}ms'
+  health: '&7Health: &fhealthy={healthy}, failures={failures}, checked={checked}'
+  recovery: '&7SQL recovery: &fattempts={attempts}, last={last}'
+  migration-state: '&7Migration: &fstate={state}, running={running}, rollback={rollback}'
+  unclean: '&7Previous unclean shutdown detected: &f{value}'
   last-write: '&7Last successful write: &f{value}'
   last-error: '&7Last error: &f{error}'
+
   verify-start: '&7Checking storage backend...'
   verify-ok: '&aStorage backend responded successfully.'
   verify-failed: '&cStorage backend verification failed. Check console/config.'
+
   flush-ok: '&aDurable storage flush completed.'
   flush-failed: '&cDurable storage flush failed. Check console immediately.'
-  backup-ok: '&aManual YAML snapshot created: &f{path}'
+
+  backup-ok: '&aYAML snapshot created: &f{path}'
   backup-failed: '&cBackup failed: &f{error}'
-  usage: '&7Usage: /partystorage <status|verify|flush|backup>'
+
+  migrate-start: '&eStarting verified migration to &f{target}&e (force={force}). Gameplay data remains in memory during I/O.'
+  migrate-ok: '&aVerified storage migration completed: &f{from} &7-> &f{to}&a. Pre-migration backup: &f{backup}'
+  migrate-failed: '&cStorage migration aborted safely: &f{error}'
+  migrate-usage: '&7Usage: /partystorage migrate <YAML|SQLITE|MYSQL> [force]'
+
+  rollback-start: '&eSwitching live storage back to &f{target}&e while preserving current data.'
+  rollback-ok: '&aStorage rollback completed: &f{from} &7-> &f{to}&a. Safety backup: &f{backup}'
+  rollback-failed: '&cStorage rollback failed: &f{error}'
+  rollback-none: '&cNo successful storage migration is available to roll back.'
+
+  usage: '&7Usage: /partystorage <status|verify|flush|backup|migrate|rollback>'

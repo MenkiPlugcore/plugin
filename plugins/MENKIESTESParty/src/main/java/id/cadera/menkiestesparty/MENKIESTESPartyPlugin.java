@@ -31,13 +31,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.schedulerCompat = new SchedulerCompat(this);
 
         if (!schedulerCompat.runtimeAllowed()) {
-            getLogger().severe("Folia detected. MENKIESTESParty v1.5.0 blocks Folia by default because full region-thread safety is not certified yet.");
+            getLogger().severe("Folia detected. MENKIESTESParty v1.5.1 blocks Folia by default because full region-thread safety is not certified yet.");
             getLogger().severe("Use compatibility.folia.experimental=true only for controlled testing. Core data was not loaded.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (schedulerCompat.foliaDetected()) {
-            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.5.0.");
+            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.5.1.");
         }
 
         try {
@@ -100,11 +100,14 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             if (dirty) flushAsync();
         }, 20L, 20L);
         schedulerCompat.runGlobalTimer(stability::tickFast, 100L, 100L);
+        schedulerCompat.runGlobalTimer(storage::maintenanceTick, 200L, 200L);
+
         long apiScanTicks = Math.max(1L, getConfig().getLong("developer.events.scan-ticks", 20L));
         schedulerCompat.runGlobalTimer(() -> {
             if (apiHardening.enabled()) apiHardening.tick();
             else developerApi.tick();
         }, apiScanTicks, apiScanTicks);
+
         schedulerCompat.runGlobalTimer(() -> {
             war.tickMinute();
             parties.tickWeeklyReset();
@@ -120,11 +123,14 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
                 getLogger().warning("PlaceholderAPI ditemukan tetapi hook gagal: " + t.getMessage());
             }
         }
+
         getLogger().info("MENKIESTESParty v" + getDescription().getVersion()
-                + " enabled. Storage: configured=" + storage.configuredBackend()
+                + " enabled. Storage: schema=" + storage.schemaVersion()
+                + ", configured=" + storage.configuredBackend()
                 + ", active=" + storage.activeBackend()
                 + ", async=" + storage.asyncWrites()
                 + ", degraded=" + storage.degraded()
+                + ", unclean-recovery=" + storage.uncleanShutdownDetected()
                 + ". Scheduler=" + schedulerCompat.mode()
                 + ". Progression: projects=" + progression.moduleEnabled("projects")
                 + ", skills=" + progression.moduleEnabled("skill-tree")
@@ -213,6 +219,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().options().copyDefaults(true);
             getConfig().set(storageMarker, true);
             getLogger().info("Config migration: v1.5.0 storage/compatibility defaults merged into config.yml.");
+        }
+
+        String storageHardeningMarker = "migrations.storage-hardening-v1_5_1";
+        if (!getConfig().getBoolean(storageHardeningMarker, false)) {
+            getConfig().options().copyDefaults(true);
+            getConfig().set(storageHardeningMarker, true);
+            getLogger().info("Config migration: v1.5.1 storage hardening marker applied.");
         }
         saveConfig();
     }
