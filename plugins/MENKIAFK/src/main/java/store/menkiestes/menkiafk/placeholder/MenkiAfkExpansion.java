@@ -54,6 +54,8 @@ public final class MenkiAfkExpansion extends PlaceholderExpansion {
             case "stats_week" -> Text.duration(stats.weekMillis());
             case "stats_total" -> Text.duration(stats.totalMillis());
             case "stats_sessions" -> String.valueOf(stats.sessions());
+            case "stats_manual_sessions" -> String.valueOf(stats.manualSessions());
+            case "stats_auto_sessions" -> String.valueOf(stats.autoSessions());
             case "stats_longest" -> Text.duration(stats.longestMillis());
             default -> null;
         };
