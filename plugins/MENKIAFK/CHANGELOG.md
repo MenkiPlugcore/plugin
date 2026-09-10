@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0 Universal
+
+- Added standalone persistent AFK statistics in `plugins/MENKIAFK/stats.yml`.
+- Added `/afkstats [player]` with today, current week, total AFK time, session count, and longest session.
+- Added `/afktop [total|today|week|longest|sessions] [page]` and `/afkleaderboard` alias.
+- Added live inclusion of active AFK sessions in statistics and leaderboards.
+- Added autosave checkpointing for active AFK sessions to reduce stat loss after an unexpected server stop.
+- Added configurable statistics timezone, daily history retention, autosave interval, and leaderboard page size.
+- Added `%menkiafk_stats_today%`, `%menkiafk_stats_week%`, `%menkiafk_stats_total%`, `%menkiafk_stats_sessions%`, `%menkiafk_stats_longest%`, and `%menkiafk_rank_total%` PlaceholderAPI placeholders.
+- Added `/menkiafk resetstats <player>` for administrators.
+- Statistics remain independent from Vault, economy plugins, crate plugins, AFK worlds, external databases, or any specific server configuration.
+- Runtime AFK/session detection remains RAM-based and no statistics writes occur in movement/chat hot paths.
+- Preserved the Paper 1.21.11 -> 26.2 universal compatibility target and Java 21 bytecode baseline.
+
 ## 1.1.0 Universal
 
 - Repackaged as a single compatibility-oriented build for Paper 1.21.11 through 26.2.
