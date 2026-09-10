@@ -30,6 +30,8 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 public final class StatsManager {
+    private static final int CURRENT_SCHEMA_VERSION = 3;
+
     public enum Metric {
         TOTAL("total", "Total AFK"),
         TODAY("today", "Hari Ini"),
@@ -134,6 +136,7 @@ public final class StatsManager {
     private long minimumSessionMillis = 10_000L;
     private boolean dirty;
     private boolean persistenceBlocked;
+    private boolean lastSaveFailed;
 
     public StatsManager(MenkiAfkPlugin plugin) {
         this.plugin = plugin;
@@ -228,7 +231,7 @@ public final class StatsManager {
     }
 
     public synchronized boolean isPersistenceHealthy() {
-        return !persistenceBlocked;
+        return !persistenceBlocked && !lastSaveFailed;
     }
 
     public synchronized List<RankedEntry> leaderboard(Metric metric) {
@@ -282,7 +285,7 @@ public final class StatsManager {
         pruneOldDays();
         long now = System.currentTimeMillis();
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("schema-version", 3);
+        yaml.set("schema-version", CURRENT_SCHEMA_VERSION);
         yaml.set("timezone", zoneId.getId());
 
         Set<UUID> ids = new HashSet<>(entries.keySet());
@@ -321,8 +324,11 @@ public final class StatsManager {
                 Files.move(tempStatsFile.toPath(), statsFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
             dirty = false;
+            lastSaveFailed = false;
         } catch (IOException exception) {
-            plugin.getLogger().log(Level.SEVERE, "Gagal menyimpan stats.yml MENKIAFK secara aman. File lama tidak sengaja ditimpa sebagian.", exception);
+            lastSaveFailed = true;
+            plugin.getLogger().log(Level.SEVERE,
+                    "Gagal menyimpan stats.yml MENKIAFK secara aman. stats.yml lama dipertahankan jika masih tersedia.", exception);
         }
     }
 
@@ -335,6 +341,14 @@ public final class StatsManager {
         } catch (IOException | InvalidConfigurationException exception) {
             handleCorruptStats(exception);
             return;
+        }
+
+        int schemaVersion = Math.max(1, yaml.getInt("schema-version", 1));
+        if (schemaVersion > CURRENT_SCHEMA_VERSION) {
+            persistenceBlocked = true;
+            plugin.getLogger().severe("stats.yml memakai schema-version " + schemaVersion
+                    + " yang lebih baru dari dukungan v1.4.1 (schema " + CURRENT_SCHEMA_VERSION + "). "
+                    + "Data dibaca best-effort, tetapi penulisan dinonaktifkan agar downgrade tidak merusak format yang lebih baru.");
         }
 
         ConfigurationSection players = yaml.getConfigurationSection("players");
@@ -393,7 +407,7 @@ public final class StatsManager {
         pruneOldDays();
         dirty = dirty || repaired;
         if (repaired) {
-            plugin.getLogger().warning("stats.yml berisi nilai tidak konsisten. Nilai yang aman telah diperbaiki di memory dan akan dirapikan pada save berikutnya.");
+            plugin.getLogger().warning("stats.yml berisi nilai tidak konsisten. Nilai yang aman telah diperbaiki di memory dan akan dirapikan pada save berikutnya jika penulisan diizinkan.");
         }
     }
 
