@@ -44,7 +44,7 @@ MENKIAFK v1.2.0 deliberately keeps statistics self-contained:
 - no MySQL, Redis, SQLite driver, Vault, or server-specific dependency
 - persistent storage uses Bukkit YAML (`stats.yml`)
 - AFK activity detection does not write to disk
-- leaderboard sorting happens only when requested
+- leaderboard sorting happens only when requested through `/afktop`
 - completed sessions are persisted through periodic autosave and normal shutdown
 - active sessions are projected into autosave checkpoints without changing the in-memory session totals
 - daily history is bounded by `stats.keep-daily-days`
@@ -77,9 +77,6 @@ Persistent statistics:
 - `%menkiafk_stats_total%`
 - `%menkiafk_stats_sessions%`
 - `%menkiafk_stats_longest%`
-- `%menkiafk_rank_total%`
-
-`%menkiafk_rank_total%` returns `0` when the player has no ranked AFK session yet.
 
 ## Permissions
 
