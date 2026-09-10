@@ -1,9 +1,9 @@
 name: MENKIAFK
-version: '1.2.0'
+version: '1.3.0'
 main: store.menkiestes.menkiafk.MenkiAfkPlugin
 api-version: '1.21.11'
 author: MENKIESTES
-description: Universal lightweight standalone AFK system with persistent stats and leaderboards.
+description: Universal lightweight standalone AFK system with persistent stats, leaderboards, and QoL tools.
 softdepend: [PlaceholderAPI, Essentials]
 
 commands:
@@ -14,6 +14,10 @@ commands:
   afkcheck:
     description: Mengecek status AFK diri sendiri atau player lain.
     usage: /afkcheck [player]
+  afklist:
+    description: Melihat player online yang sedang AFK.
+    usage: /afklist
+    permission: menki.afk.list
   afkstats:
     description: Melihat statistik AFK diri sendiri atau player lain.
     usage: /afkstats [player]
@@ -31,6 +35,9 @@ commands:
 permissions:
   menki.afk:
     description: Menggunakan command /afk.
+    default: true
+  menki.afk.list:
+    description: Melihat daftar player online yang sedang AFK.
     default: true
   menki.afk.stats:
     description: Melihat statistik AFK.

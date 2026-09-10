@@ -8,6 +8,7 @@ import org.bukkit.scheduler.BukkitTask;
 import store.menkiestes.menkiafk.afk.AfkManager;
 import store.menkiestes.menkiafk.command.AfkCheckCommand;
 import store.menkiestes.menkiafk.command.AfkCommand;
+import store.menkiestes.menkiafk.command.AfkListCommand;
 import store.menkiestes.menkiafk.command.AfkStatsCommand;
 import store.menkiestes.menkiafk.command.AfkTopCommand;
 import store.menkiestes.menkiafk.command.MenkiAfkCommand;
@@ -64,6 +65,9 @@ public final class MenkiAfkPlugin extends JavaPlugin {
 
         PluginCommand afkCheck = Objects.requireNonNull(getCommand("afkcheck"), "Command /afkcheck tidak terdaftar");
         afkCheck.setExecutor(new AfkCheckCommand(this, afkManager));
+
+        PluginCommand afkList = Objects.requireNonNull(getCommand("afklist"), "Command /afklist tidak terdaftar");
+        afkList.setExecutor(new AfkListCommand(this, afkManager));
 
         PluginCommand afkStats = Objects.requireNonNull(getCommand("afkstats"), "Command /afkstats tidak terdaftar");
         afkStats.setExecutor(new AfkStatsCommand(this, statsManager));

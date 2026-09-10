@@ -4,6 +4,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import store.menkiestes.menkiafk.MenkiAfkPlugin;
+import store.menkiestes.menkiafk.afk.AfkType;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,7 +66,9 @@ public final class StatsManager {
             long weekMillis,
             long totalMillis,
             long longestMillis,
-            int sessions
+            int sessions,
+            int manualSessions,
+            int autoSessions
     ) {
         public long value(Metric metric) {
             return switch (metric) {
@@ -76,9 +79,16 @@ public final class StatsManager {
                 case SESSIONS -> sessions;
             };
         }
+
+        public int legacySessions() {
+            return Math.max(0, sessions - manualSessions - autoSessions);
+        }
     }
 
     public record RankedEntry(int rank, Snapshot stats) {
+    }
+
+    private record ActiveSession(long startedAt, AfkType type) {
     }
 
     private static final class StoredStats {
@@ -86,6 +96,8 @@ public final class StatsManager {
         private long totalMillis;
         private long longestMillis;
         private int sessions;
+        private int manualSessions;
+        private int autoSessions;
         private final Map<LocalDate, Long> dailyMillis = new HashMap<>();
 
         private StoredStats(String name) {
@@ -97,6 +109,8 @@ public final class StatsManager {
             copy.totalMillis = totalMillis;
             copy.longestMillis = longestMillis;
             copy.sessions = sessions;
+            copy.manualSessions = manualSessions;
+            copy.autoSessions = autoSessions;
             copy.dailyMillis.putAll(dailyMillis);
             return copy;
         }
@@ -105,10 +119,11 @@ public final class StatsManager {
     private final MenkiAfkPlugin plugin;
     private final File statsFile;
     private final Map<UUID, StoredStats> entries = new HashMap<>();
-    private final Map<UUID, Long> activeStartedAt = new HashMap<>();
+    private final Map<UUID, ActiveSession> activeSessions = new HashMap<>();
 
     private ZoneId zoneId = ZoneId.systemDefault();
     private int keepDailyDays = 35;
+    private long minimumSessionMillis = 10_000L;
     private boolean dirty;
 
     public StatsManager(MenkiAfkPlugin plugin) {
@@ -135,6 +150,8 @@ public final class StatsManager {
         }
 
         keepDailyDays = Math.max(14, plugin.getConfig().getInt("stats.keep-daily-days", 35));
+        long minimumSeconds = Math.max(0L, plugin.getConfig().getLong("stats.minimum-session-seconds", 10L));
+        minimumSessionMillis = minimumSeconds * 1000L;
         pruneOldDays();
     }
 
@@ -147,23 +164,24 @@ public final class StatsManager {
         }
     }
 
-    public synchronized void startSession(Player player, long startedAt) {
+    public synchronized void startSession(Player player, long startedAt, AfkType type) {
         registerPlayer(player);
-        activeStartedAt.putIfAbsent(player.getUniqueId(), startedAt);
+        activeSessions.putIfAbsent(player.getUniqueId(), new ActiveSession(startedAt, type));
         dirty = true;
     }
 
     public synchronized void finishSession(UUID id, long endedAt) {
-        Long startedAt = activeStartedAt.remove(id);
-        if (startedAt == null) return;
+        ActiveSession active = activeSessions.remove(id);
+        if (active == null) return;
 
         StoredStats stats = entries.computeIfAbsent(id, ignored -> new StoredStats(shortUuid(id)));
-        applySession(stats, startedAt, endedAt);
-        dirty = true;
+        if (applySession(stats, active.startedAt(), endedAt, active.type())) {
+            dirty = true;
+        }
     }
 
     public synchronized void finishAllSessions(long endedAt) {
-        for (UUID id : new ArrayList<>(activeStartedAt.keySet())) {
+        for (UUID id : new ArrayList<>(activeSessions.keySet())) {
             finishSession(id, endedAt);
         }
     }
@@ -172,9 +190,9 @@ public final class StatsManager {
         StoredStats base = entries.get(id);
         StoredStats view = base == null ? new StoredStats(shortUuid(id)) : base.copy();
 
-        Long activeStart = activeStartedAt.get(id);
-        if (activeStart != null) {
-            applySession(view, activeStart, System.currentTimeMillis());
+        ActiveSession active = activeSessions.get(id);
+        if (active != null) {
+            applySession(view, active.startedAt(), System.currentTimeMillis(), active.type());
         }
         return snapshotOf(id, view);
     }
@@ -199,7 +217,7 @@ public final class StatsManager {
 
     public synchronized List<RankedEntry> leaderboard(Metric metric) {
         Set<UUID> ids = new HashSet<>(entries.keySet());
-        ids.addAll(activeStartedAt.keySet());
+        ids.addAll(activeSessions.keySet());
 
         List<Snapshot> snapshots = new ArrayList<>();
         for (UUID id : ids) {
@@ -229,14 +247,16 @@ public final class StatsManager {
         StoredStats current = entries.get(id);
         String name = current == null ? shortUuid(id) : current.name;
         entries.put(id, new StoredStats(name));
-        if (activeStartedAt.containsKey(id)) {
-            activeStartedAt.put(id, resetAt);
+
+        ActiveSession active = activeSessions.get(id);
+        if (active != null) {
+            activeSessions.put(id, new ActiveSession(resetAt, active.type()));
         }
         dirty = true;
     }
 
     public synchronized void saveIfNeeded() {
-        if (!dirty && activeStartedAt.isEmpty()) return;
+        if (!dirty && activeSessions.isEmpty()) return;
         saveNow();
     }
 
@@ -244,26 +264,28 @@ public final class StatsManager {
         pruneOldDays();
         long now = System.currentTimeMillis();
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("schema-version", 1);
+        yaml.set("schema-version", 2);
         yaml.set("timezone", zoneId.getId());
 
         Set<UUID> ids = new HashSet<>(entries.keySet());
-        ids.addAll(activeStartedAt.keySet());
+        ids.addAll(activeSessions.keySet());
 
         for (UUID id : ids) {
             StoredStats base = entries.get(id);
             StoredStats persisted = base == null ? new StoredStats(shortUuid(id)) : base.copy();
-            Long activeStart = activeStartedAt.get(id);
-            if (activeStart != null) {
+            ActiveSession active = activeSessions.get(id);
+            if (active != null) {
                 // Checkpoint active sessions without mutating RAM. If the server crashes,
                 // the latest autosave still preserves AFK time up to this checkpoint.
-                applySession(persisted, activeStart, now);
+                applySession(persisted, active.startedAt(), now, active.type());
             }
 
             String root = "players." + id;
             yaml.set(root + ".name", persisted.name);
             yaml.set(root + ".total-millis", persisted.totalMillis);
             yaml.set(root + ".sessions", persisted.sessions);
+            yaml.set(root + ".manual-sessions", persisted.manualSessions);
+            yaml.set(root + ".auto-sessions", persisted.autoSessions);
             yaml.set(root + ".longest-millis", persisted.longestMillis);
             for (Map.Entry<LocalDate, Long> day : persisted.dailyMillis.entrySet()) {
                 yaml.set(root + ".daily." + day.getKey(), day.getValue());
@@ -298,6 +320,8 @@ public final class StatsManager {
             StoredStats stats = new StoredStats(yaml.getString(root + ".name", shortUuid(id)));
             stats.totalMillis = Math.max(0L, yaml.getLong(root + ".total-millis", 0L));
             stats.sessions = Math.max(0, yaml.getInt(root + ".sessions", 0));
+            stats.manualSessions = Math.max(0, yaml.getInt(root + ".manual-sessions", 0));
+            stats.autoSessions = Math.max(0, yaml.getInt(root + ".auto-sessions", 0));
             stats.longestMillis = Math.max(0L, yaml.getLong(root + ".longest-millis", 0L));
 
             ConfigurationSection daily = yaml.getConfigurationSection(root + ".daily");
@@ -339,17 +363,24 @@ public final class StatsManager {
                 weekMillis,
                 stats.totalMillis,
                 stats.longestMillis,
-                stats.sessions
+                stats.sessions,
+                stats.manualSessions,
+                stats.autoSessions
         );
     }
 
-    private void applySession(StoredStats stats, long startedAt, long endedAt) {
+    private boolean applySession(StoredStats stats, long startedAt, long endedAt, AfkType type) {
         long safeEnd = Math.max(startedAt, endedAt);
         long duration = safeEnd - startedAt;
+        if (duration < minimumSessionMillis) return false;
+
         stats.totalMillis += duration;
         stats.longestMillis = Math.max(stats.longestMillis, duration);
         stats.sessions++;
+        if (type == AfkType.AUTO) stats.autoSessions++;
+        else stats.manualSessions++;
         addDaily(stats, startedAt, safeEnd);
+        return true;
     }
 
     private void addDaily(StoredStats stats, long startedAt, long endedAt) {

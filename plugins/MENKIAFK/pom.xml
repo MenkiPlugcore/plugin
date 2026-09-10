@@ -6,9 +6,9 @@
 
     <groupId>store.menkiestes</groupId>
     <artifactId>menkiafk</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
     <name>MENKIAFK</name>
-    <description>Universal lightweight standalone AFK system with persistent stats and leaderboards (Paper 1.21.11-26.2).</description>
+    <description>Universal lightweight standalone AFK system with persistent stats, leaderboards, and QoL tools (Paper 1.21.11-26.2).</description>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
