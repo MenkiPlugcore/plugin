@@ -6,8 +6,9 @@
 - Fixed external namespaced AFK commands such as `/essentials:afk` being incorrectly treated as MENKIAFK's own toggle for activity handling.
 - Added crash-safer `stats.yml` writes using a sibling temporary file plus atomic replace when supported by the filesystem.
 - Added corrupt YAML protection: unreadable `stats.yml` is quarantined instead of being silently overwritten; if quarantine fails, writes are blocked for that server session to protect the original file.
+- Added downgrade protection: if `stats.yml` uses a schema newer than v1.4.1 supports, known fields are read best-effort but writes are blocked so the newer format is not overwritten.
 - Added safe normalization for inconsistent session counters and longest-session values loaded from `stats.yml`.
-- Added `Stats I/O: OK/BLOCKED` to `/menkiafk status` for storage diagnostics.
+- Added `Stats I/O: OK/BLOCKED` to `/menkiafk status`; failed saves also surface as an unhealthy I/O state until a later save succeeds.
 - `/menkiafk reload` now checkpoints statistics before applying new timezone/retention/autosave settings.
 - Shutdown logging no longer claims statistics were saved when persistence had been blocked for data protection.
 - No feature expansion, new scheduler, database, GUI, packet library, NMS access, economy dependency, or server-specific integration was added.
