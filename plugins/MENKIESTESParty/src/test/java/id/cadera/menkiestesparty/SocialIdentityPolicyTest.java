@@ -24,7 +24,7 @@ class SocialIdentityPolicyTest {
 
     @Test
     void memberActivityUsesBoundedAgeWindows() {
-        long now = 1_000_000_000L;
+        long now = 10_000_000_000L;
         assertEquals("ONLINE", SocialIdentityPolicy.activityStatus(true, 0L, now, 7, 30));
         assertEquals("ACTIVE", SocialIdentityPolicy.activityStatus(false, now - 2L * 86_400_000L, now, 7, 30));
         assertEquals("AWAY", SocialIdentityPolicy.activityStatus(false, now - 14L * 86_400_000L, now, 7, 30));
