@@ -80,7 +80,7 @@ messages:
   auto-afk-broadcast: "{@prefix} &e%player% &7otomatis &6AFK &8— &7%reason%"
   return-broadcast: "{@prefix} &f%player% &atelah kembali &8(&7AFK %duration%&8)"
   not-afk: "{@prefix} &f%player% &7sedang tidak AFK."
-  player-not-found: "{@prefix} &cPlayer &f%player% &ctidak ditemukan di data MENKIAFK."
+  player-not-found: "{@prefix} &cPlayer &f%player% &ctidak ditemukan."
   mention-warning: "&6⚠ &f%player% &esedang AFK &8— &7%reason% &8(&f%duration%&8)"
   pm-warning: "&6⚠ &f%player% &esedang AFK &8— &7%reason% &8(&f%duration%&8). &7Pesan tetap dikirim."
   inbox-header: "{@prefix} &eAda &f%count% &epesan yang dikirim saat kamu AFK:"
