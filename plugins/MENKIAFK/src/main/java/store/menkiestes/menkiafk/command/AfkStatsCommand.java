@@ -74,6 +74,12 @@ public final class AfkStatsCommand implements CommandExecutor {
                     "%sessions%", stats.legacySessions()));
         }
         sender.sendMessage(Text.replace(Text.cfg(plugin, "messages.stats-longest"), "%time%", Text.duration(stats.longestMillis())));
+        if (stats.lastAfkAt() <= 0L) {
+            sender.sendMessage(Text.cfg(plugin, "messages.stats-last-never"));
+        } else {
+            long elapsed = Math.max(0L, System.currentTimeMillis() - stats.lastAfkAt());
+            sender.sendMessage(Text.replace(Text.cfg(plugin, "messages.stats-last"), "%time%", Text.duration(elapsed)));
+        }
         sender.sendMessage(Text.cfg(plugin, "messages.stats-header"));
         return true;
     }

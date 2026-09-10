@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.0 Universal — Utility & Configuration Update
+
+- Added `manual-afk.require-reason` to make manual AFK reasons optional or required.
+- Added `manual-afk.default-reason` for `/afk` without arguments when reasons are optional.
+- Added `menki.afk.silent` permission to suppress the player's AFK and return broadcasts without changing AFK state or statistics.
+- `menki.afk.silent` defaults to false to avoid silently changing existing server broadcast behavior.
+- Added persistent `last-afk-at` tracking and displayed it in `/afkstats`.
+- Added `%menkiafk_last_afk%` PlaceholderAPI placeholder.
+- Added numeric `%menkiafk_stats_total_seconds%`, `%menkiafk_stats_total_minutes%`, and `%menkiafk_stats_total_hours%` placeholders.
+- Upgraded `stats.yml` to schema version 3 while preserving v1.2.0/v1.3.0 data compatibility.
+- Existing older statistics without `last-afk-at` remain valid and gain the field after future AFK activity.
+- No new scheduler, database, GUI framework, packet library, economy dependency, or server-specific integration was added.
+- Preserved the Paper 1.21.11 -> 26.2 universal compatibility target and Java 21 bytecode baseline.
+
 ## 1.3.0 Universal — Lightweight QoL Update
 
 - Added `/afklist` to show currently online AFK players with duration, type, and reason.

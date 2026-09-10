@@ -35,7 +35,9 @@ public final class AfkCommand implements CommandExecutor {
             return true;
         }
 
-        if (args.length == 0) {
+        boolean requireReason = plugin.getConfig().getBoolean("manual-afk.require-reason", false);
+        boolean usingDefaultReason = args.length == 0;
+        if (usingDefaultReason && requireReason) {
             player.sendMessage(Text.cfg(plugin, "messages.reason-required"));
             return true;
         }
@@ -47,14 +49,25 @@ public final class AfkCommand implements CommandExecutor {
             return true;
         }
 
-        StringJoiner joiner = new StringJoiner(" ");
-        for (String arg : args) joiner.add(arg);
-        String reason = joiner.toString().trim();
+        String reason;
+        if (usingDefaultReason) {
+            reason = plugin.getConfig().getString("manual-afk.default-reason", "Sedang tidak tersedia");
+            if (reason == null || reason.isBlank()) reason = "Sedang tidak tersedia";
+            reason = reason.trim();
+        } else {
+            StringJoiner joiner = new StringJoiner(" ");
+            for (String arg : args) joiner.add(arg);
+            reason = joiner.toString().trim();
+        }
 
         int max = Math.max(10, plugin.getConfig().getInt("manual-afk.max-reason-length", 80));
         if (reason.length() > max) {
-            player.sendMessage(Text.replace(Text.cfg(plugin, "messages.reason-too-long"), "%max%", max));
-            return true;
+            if (usingDefaultReason) {
+                reason = reason.substring(0, max).trim();
+            } else {
+                player.sendMessage(Text.replace(Text.cfg(plugin, "messages.reason-too-long"), "%max%", max));
+                return true;
+            }
         }
 
         manager.setManualAfk(player, reason);

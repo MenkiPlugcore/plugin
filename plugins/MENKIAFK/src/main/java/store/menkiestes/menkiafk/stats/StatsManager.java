@@ -68,7 +68,8 @@ public final class StatsManager {
             long longestMillis,
             int sessions,
             int manualSessions,
-            int autoSessions
+            int autoSessions,
+            long lastAfkAt
     ) {
         public long value(Metric metric) {
             return switch (metric) {
@@ -98,6 +99,7 @@ public final class StatsManager {
         private int sessions;
         private int manualSessions;
         private int autoSessions;
+        private long lastAfkAt;
         private final Map<LocalDate, Long> dailyMillis = new HashMap<>();
 
         private StoredStats(String name) {
@@ -111,6 +113,7 @@ public final class StatsManager {
             copy.sessions = sessions;
             copy.manualSessions = manualSessions;
             copy.autoSessions = autoSessions;
+            copy.lastAfkAt = lastAfkAt;
             copy.dailyMillis.putAll(dailyMillis);
             return copy;
         }
@@ -175,9 +178,10 @@ public final class StatsManager {
         if (active == null) return;
 
         StoredStats stats = entries.computeIfAbsent(id, ignored -> new StoredStats(shortUuid(id)));
-        if (applySession(stats, active.startedAt(), endedAt, active.type())) {
-            dirty = true;
-        }
+        long safeEnd = Math.max(active.startedAt(), endedAt);
+        stats.lastAfkAt = Math.max(stats.lastAfkAt, safeEnd);
+        applySession(stats, active.startedAt(), safeEnd, active.type());
+        dirty = true;
     }
 
     public synchronized void finishAllSessions(long endedAt) {
@@ -192,6 +196,7 @@ public final class StatsManager {
 
         ActiveSession active = activeSessions.get(id);
         if (active != null) {
+            view.lastAfkAt = Math.max(view.lastAfkAt, active.startedAt());
             applySession(view, active.startedAt(), System.currentTimeMillis(), active.type());
         }
         return snapshotOf(id, view);
@@ -264,7 +269,7 @@ public final class StatsManager {
         pruneOldDays();
         long now = System.currentTimeMillis();
         YamlConfiguration yaml = new YamlConfiguration();
-        yaml.set("schema-version", 2);
+        yaml.set("schema-version", 3);
         yaml.set("timezone", zoneId.getId());
 
         Set<UUID> ids = new HashSet<>(entries.keySet());
@@ -275,6 +280,7 @@ public final class StatsManager {
             StoredStats persisted = base == null ? new StoredStats(shortUuid(id)) : base.copy();
             ActiveSession active = activeSessions.get(id);
             if (active != null) {
+                persisted.lastAfkAt = Math.max(persisted.lastAfkAt, active.startedAt());
                 // Checkpoint active sessions without mutating RAM. If the server crashes,
                 // the latest autosave still preserves AFK time up to this checkpoint.
                 applySession(persisted, active.startedAt(), now, active.type());
@@ -287,6 +293,7 @@ public final class StatsManager {
             yaml.set(root + ".manual-sessions", persisted.manualSessions);
             yaml.set(root + ".auto-sessions", persisted.autoSessions);
             yaml.set(root + ".longest-millis", persisted.longestMillis);
+            yaml.set(root + ".last-afk-at", persisted.lastAfkAt);
             for (Map.Entry<LocalDate, Long> day : persisted.dailyMillis.entrySet()) {
                 yaml.set(root + ".daily." + day.getKey(), day.getValue());
             }
@@ -323,6 +330,7 @@ public final class StatsManager {
             stats.manualSessions = Math.max(0, yaml.getInt(root + ".manual-sessions", 0));
             stats.autoSessions = Math.max(0, yaml.getInt(root + ".auto-sessions", 0));
             stats.longestMillis = Math.max(0L, yaml.getLong(root + ".longest-millis", 0L));
+            stats.lastAfkAt = Math.max(0L, yaml.getLong(root + ".last-afk-at", 0L));
 
             ConfigurationSection daily = yaml.getConfigurationSection(root + ".daily");
             if (daily != null) {
@@ -365,7 +373,8 @@ public final class StatsManager {
                 stats.longestMillis,
                 stats.sessions,
                 stats.manualSessions,
-                stats.autoSessions
+                stats.autoSessions,
+                stats.lastAfkAt
         );
     }
 
