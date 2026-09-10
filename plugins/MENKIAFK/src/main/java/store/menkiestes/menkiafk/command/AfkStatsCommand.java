@@ -64,6 +64,15 @@ public final class AfkStatsCommand implements CommandExecutor {
         sender.sendMessage(Text.replace(Text.cfg(plugin, "messages.stats-week"), "%time%", Text.duration(stats.weekMillis())));
         sender.sendMessage(Text.replace(Text.cfg(plugin, "messages.stats-total"), "%time%", Text.duration(stats.totalMillis())));
         sender.sendMessage(Text.replace(Text.cfg(plugin, "messages.stats-sessions"), "%sessions%", stats.sessions()));
+        sender.sendMessage(Text.replace(
+                Text.cfg(plugin, "messages.stats-types"),
+                "%manual%", stats.manualSessions(),
+                "%auto%", stats.autoSessions()));
+        if (stats.legacySessions() > 0) {
+            sender.sendMessage(Text.replace(
+                    Text.cfg(plugin, "messages.stats-legacy"),
+                    "%sessions%", stats.legacySessions()));
+        }
         sender.sendMessage(Text.replace(Text.cfg(plugin, "messages.stats-longest"), "%time%", Text.duration(stats.longestMillis())));
         sender.sendMessage(Text.cfg(plugin, "messages.stats-header"));
         return true;
