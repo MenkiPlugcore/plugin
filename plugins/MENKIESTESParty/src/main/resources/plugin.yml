@@ -1,9 +1,9 @@
 name: MENKIESTESParty
-version: 1.6.2
+version: 1.7.0
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
-description: Modular Paper Party/Guild framework with hardened administration recovery/observability, optional storage, public API, progression, interactions and Party War.
+description: Modular Paper Party/Guild framework with social Party profiles, Dynamic Identity, hardened administration, optional storage, public API, progression, interactions and Party War.
 softdepend: [PlaceholderAPI, GriefPrevention, Vault]
 commands:
   party:
@@ -38,12 +38,20 @@ commands:
     usage: /partydivision
   partyidentity:
     aliases: [pidentity]
-    description: Dynamic Party Identity
+    description: Automatic Dynamic Party Identity
     usage: /partyidentity
   partyprofile:
     aliases: [pprofile]
-    description: Party progression profile
-    usage: /partyprofile
+    description: View a Social Party Profile
+    usage: /partyprofile [party|player]
+  partysocial:
+    aliases: [psocial]
+    description: Configure Social Party Identity and achievements
+    usage: /partysocial [status|description|tag|color|icon|visibility|badge|achievements|member|help]
+  partytop:
+    aliases: [ptop, partyleaderboard]
+    description: Social Party leaderboard
+    usage: /partytop [reputation|level|members|projects|activity|age] [page]
   partyinteraction:
     aliases: [pinteraction]
     description: Party Interaction overview
@@ -118,6 +126,18 @@ permissions:
     default: op
   menkiestesparty.admin.gui:
     description: Open the Party administration inventory GUI
+    default: op
+  menkiestesparty.social.view:
+    description: View public Party social profiles and own/private Party profile
+    default: true
+  menkiestesparty.social.edit:
+    description: Edit own Party social identity; Party role rules still apply
+    default: true
+  menkiestesparty.social.leaderboard:
+    description: View command-driven Party social leaderboards
+    default: true
+  menkiestesparty.social.private.bypass:
+    description: View other Parties marked PRIVATE
     default: op
   menkiestesparty.gui.progression:
     description: Open the Party Progression GUI

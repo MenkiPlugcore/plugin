@@ -2,6 +2,34 @@
 
 All notable MENKIESTESParty changes are documented here. Releases remain standalone/public-plugin oriented and preserve the custom MENKIESTES/CADERA project licensing while respecting bundled third-party notices.
 
+## 1.7.0 - 2026-09-10
+
+Social & Party Identity Update.
+
+### Added
+
+- Player-facing Social Party Profiles through `/partyprofile [party|player]` and nested `/party profile`.
+- `/partysocial` / `/party social` customization for description, unique short tag, allowlisted color/icon, visibility and active badge.
+- Configuration-driven permanent Party achievements.
+- `/party social member [player]` with Party role, Division, join date and lightweight activity status.
+- `/partytop` / `/party top` command-driven leaderboards for reputation, level, members, completed Projects, Dynamic Identity activity and Party age.
+- Public/private profile visibility with own-Party and staff bypass handling.
+- `social.yml` configuration and `SOCIAL_IDENTITY.md` documentation.
+- Social PlaceholderAPI values for tags, description, color, icon, visibility, badge, profile display, achievement count, activity and member state.
+- Bukkit-free social validation/achievement/leaderboard policy regression tests.
+
+### Compatibility / Performance
+
+- Dynamic Party Identity from v1.2.x remains automatic and is not replaced by manual Social Identity fields.
+- Social profile values are stored under the existing `parties.<party>.social.*` record; no new storage document/table is added.
+- No social per-tick scheduler or duplicate gameplay activity tracker is introduced.
+- Private profiles are excluded from social leaderboards by default.
+- Existing `joined-at` member data is reused; older missing values can fall back to Party creation time.
+- `MenkiPartyAPI.API_VERSION` remains `1.0`.
+- YAML remains the default local backend; SQLite/MySQL remain optional.
+- Web Inspector/Web Editor remains deferred until after v2.0.
+- Java 21 build, MySQL 8.4 integration, Java 25 runtime probe and automatic GitHub Release remain production gates.
+
 ## 1.6.2 - 2026-09-10
 
 Admin Recovery & Observability Update.

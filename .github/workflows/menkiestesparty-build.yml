@@ -36,7 +36,7 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build + API/storage/admin contract tests
+      - name: Build + API/storage/admin/social contract tests
         run: gradle clean build --stacktrace
 
       - name: Verify production JAR
@@ -59,11 +59,14 @@ jobs:
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/AdminAuditQuery.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/AdminSnapshotVerifier.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/AdminRepairPlanner.class$'
+          jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/SocialIdentityManager.class$'
+          jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/SocialIdentityPolicy.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/JdbcStorageBackend.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/StorageIntegrity.class$'
           jar tf "$JAR" | grep -q '^org/sqlite/JDBC.class$'
           jar tf "$JAR" | grep -q '^com/mysql/cj/jdbc/Driver.class$'
           jar tf "$JAR" | grep -q '^administration.yml$'
+          jar tf "$JAR" | grep -q '^social.yml$'
           jar tf "$JAR" | grep -q '^messages.yml$'
           jar tf "$JAR" | grep -q '^storage.yml$'
           java -cp "$JAR" id.cadera.menkiestesparty.compat.RuntimeCompatibilityProbe

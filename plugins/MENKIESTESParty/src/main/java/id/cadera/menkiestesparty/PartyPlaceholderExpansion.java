@@ -73,6 +73,22 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
         if(identifier.equalsIgnoreCase("applications_pending"))return party==null?"0":String.valueOf(plugin.interactions().pendingApplicationCount(party));
         if(identifier.equalsIgnoreCase("inbox_unread"))return String.valueOf(plugin.stability().unreadCount(player.getUniqueId()));
 
+        // v1.7.0 - player-facing Social & Party Identity placeholders.
+        // These always describe the requesting player's own Party, so a PRIVATE
+        // profile is not leaked to an unrelated PlaceholderAPI request target.
+        if(identifier.equalsIgnoreCase("social_tag"))return party==null?"":plugin.socialIdentity().tag(party);
+        if(identifier.equalsIgnoreCase("social_description"))return party==null?"":plugin.socialIdentity().description(party);
+        if(identifier.equalsIgnoreCase("social_color"))return party==null?"AQUA":plugin.socialIdentity().colorName(party);
+        if(identifier.equalsIgnoreCase("social_icon"))return party==null?"PLAYER_HEAD":plugin.socialIdentity().iconName(party);
+        if(identifier.equalsIgnoreCase("social_visibility"))return party==null?"NONE":plugin.socialIdentity().visibility(party);
+        if(identifier.equalsIgnoreCase("social_badge"))return party==null?"None":value(plugin.socialIdentity().activeBadgeDisplay(party),"None");
+        if(identifier.equalsIgnoreCase("social_badge_id"))return party==null?"NONE":value(plugin.socialIdentity().activeBadgeId(party),"NONE");
+        if(identifier.equalsIgnoreCase("social_profile_name"))return party==null?"None":plugin.socialIdentity().profileName(party);
+        if(identifier.equalsIgnoreCase("social_achievements"))return party==null?"0":String.valueOf(plugin.socialIdentity().achievementCount(party));
+        if(identifier.equalsIgnoreCase("social_activity"))return party==null?"0":String.valueOf(plugin.socialIdentity().activityTotal(party));
+        if(identifier.equalsIgnoreCase("member_since"))return party==null?"0":String.valueOf(plugin.socialIdentity().memberSince(player.getUniqueId()));
+        if(identifier.equalsIgnoreCase("member_status"))return party==null?"NONE":plugin.socialIdentity().memberStatus(player.getUniqueId());
+
         if(identifier.toLowerCase(java.util.Locale.ROOT).startsWith("relation_")){
             if(party==null)return "NEUTRAL";
             String target=identifier.substring("relation_".length());
@@ -85,4 +101,6 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
         }
         return null;
     }
+
+    private static String value(String value,String fallback){return value==null||value.isBlank()?fallback:value;}
 }

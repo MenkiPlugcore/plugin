@@ -14,6 +14,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private ProgressionManager progression;
     private ProgressionGuiV122 progressionGui;
     private InteractionManager interactions;
+    private SocialIdentityManager socialIdentity;
     private InteractionGui interactionGui;
     private PartyStabilityManager stability;
     private AdministrationManager administration;
@@ -34,13 +35,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.schedulerCompat = new SchedulerCompat(this);
 
         if (!schedulerCompat.runtimeAllowed()) {
-            getLogger().severe("Folia detected. MENKIESTESParty v1.6.2 blocks Folia by default because full region-thread safety is not certified yet.");
+            getLogger().severe("Folia detected. MENKIESTESParty v1.7.0 blocks Folia by default because full region-thread safety is not certified yet.");
             getLogger().severe("Use compatibility.folia.experimental=true only for controlled testing. Core data was not loaded.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (schedulerCompat.foliaDetected()) {
-            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.6.2.");
+            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.7.0.");
         }
 
         try {
@@ -59,6 +60,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         // this component only owns Daily Party Missions and legacy no-op methods.
         this.hall = new RewardHallManager(this, parties, storage);
         this.interactions = new InteractionManager(this, parties, storage);
+        this.socialIdentity = new SocialIdentityManager(this, parties, progression, interactions, storage);
         this.administration = new AdministrationManager(this, parties, progression, interactions, storage);
         this.administrationStability = new AdministrationStabilityManager(
                 this, administration, parties, progression, interactions, storage);
@@ -92,6 +94,10 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(administrationStability, this);
         Bukkit.getPluginManager().registerEvents(administration, this);
         Bukkit.getPluginManager().registerEvents(new PartyListener(this, parties, war), this);
+        // v1.7.0 social routing is LOWEST priority and registered before the
+        // legacy v1.2 progression listener. /party profile is therefore owned
+        // by the social layer while /party identity keeps its automatic v1.2 behavior.
+        Bukkit.getPluginManager().registerEvents(socialIdentity, this);
         Bukkit.getPluginManager().registerEvents(progression, this);
         Bukkit.getPluginManager().registerEvents(interactions, this);
         Bukkit.getPluginManager().registerEvents(interactionGui, this);
@@ -152,6 +158,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
                 + ", divisions=" + progression.moduleEnabled("divisions")
                 + ", identity=" + progression.moduleEnabled("identity")
                 + ", progression-gui=" + progressionGui.enabled()
+                + ". Social: enabled=" + socialIdentity.enabled()
                 + ". Interaction: contracts=" + interactions.moduleEnabled("contracts")
                 + ", diplomacy=" + interactions.moduleEnabled("diplomacy")
                 + ", applications=" + interactions.moduleEnabled("applications")
@@ -299,6 +306,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public ProgressionManager progression() { return progression; }
     public ProgressionGuiV122 progressionGui() { return progressionGui; }
     public InteractionManager interactions() { return interactions; }
+    public SocialIdentityManager socialIdentity() { return socialIdentity; }
     public InteractionGui interactionGui() { return interactionGui; }
     public PartyStabilityManager stability() { return stability; }
     public AdministrationManager administration() { return administration; }
@@ -314,6 +322,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public void reloadPluginConfig() {
         reloadConfig();
         if (messages != null) messages.reload();
+        if (socialIdentity != null) socialIdentity.reload();
         if (apiHardening != null) apiHardening.verifyCompatibility();
     }
 }
