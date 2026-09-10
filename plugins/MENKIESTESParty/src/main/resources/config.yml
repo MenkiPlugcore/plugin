@@ -279,3 +279,41 @@ stability:
     # Hanya repair yang tidak ambigu: orphan player index/application/diplomacy.
     safe-repair-on-startup: true
     safe-repair-periodic: true
+
+# ---------------------------------------------------------------------------
+# v1.4.0 - Developer API & Integration
+# API memakai immutable snapshots dan tidak mengekspos YAML internal.
+# Semua reward default kosong/0 sehingga upgrade tidak mengubah balance.
+# ---------------------------------------------------------------------------
+developer:
+  api:
+    enabled: true
+
+  events:
+    enabled: true
+    # Post-state event bridge. 20 ticks = 1 detik.
+    scan-ticks: 20
+
+  integrations:
+    vault:
+      # Tetap optional. Jika Vault/Economy tidak ada, core plugin tetap normal.
+      enabled: true
+
+  rewards:
+    enabled: true
+
+    party-level-up:
+      vault-owner-money: 0
+      commands: []
+
+    project-complete:
+      vault-owner-money: 0
+      commands: []
+
+    contract-complete:
+      vault-owner-money: 0
+      commands: []
+
+    war-win:
+      vault-owner-money: 0
+      commands: []

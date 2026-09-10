@@ -1,6 +1,6 @@
 plugins { java }
 group = "id.cadera"
-version = "1.3.2"
+version = "1.4.0"
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")

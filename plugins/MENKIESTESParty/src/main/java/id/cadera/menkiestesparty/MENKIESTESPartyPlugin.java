@@ -1,7 +1,9 @@
 package id.cadera.menkiestesparty;
 
+import id.cadera.menkiestesparty.api.MenkiPartyAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MENKIESTESPartyPlugin extends JavaPlugin {
@@ -12,6 +14,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private InteractionManager interactions;
     private InteractionGui interactionGui;
     private PartyStabilityManager stability;
+    private DeveloperApiManager developerApi;
     private WarManager war;
     private SeasonManager season;
     private RewardHallManager hall;
@@ -32,6 +35,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.interactions = new InteractionManager(this, parties, storage);
         this.interactionGui = new InteractionGui(this, parties, storage, interactions);
         this.stability = new PartyStabilityManager(this, parties, storage, interactions);
+        this.developerApi = new DeveloperApiManager(this, parties, progression, interactions, storage);
         this.partyGui = new PartyManageGui(this, parties);
         this.progressionGui = new ProgressionGuiV122(this, parties, progression);
 
@@ -48,8 +52,15 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(partyGui, this);
         Bukkit.getPluginManager().registerEvents(progressionGui, this);
 
+        if (developerApi.enabled()) {
+            Bukkit.getServicesManager().register(MenkiPartyAPI.class, developerApi, this, ServicePriority.Normal);
+            getLogger().info("MENKIESTESParty API v" + developerApi.apiVersion() + " registered in Bukkit ServicesManager.");
+        }
+
         Bukkit.getScheduler().runTaskTimer(this, () -> { war.tickSecond(); if (dirty) flush(); }, 20L, 20L);
         Bukkit.getScheduler().runTaskTimer(this, stability::tickFast, 100L, 100L);
+        long apiScanTicks = Math.max(1L, getConfig().getLong("developer.events.scan-ticks", 20L));
+        Bukkit.getScheduler().runTaskTimer(this, developerApi::tick, apiScanTicks, apiScanTicks);
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             war.tickMinute();
             parties.tickWeeklyReset();
@@ -75,7 +86,9 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
                 + ", diplomacy=" + interactions.moduleEnabled("diplomacy")
                 + ", applications=" + interactions.moduleEnabled("applications")
                 + ", interaction-gui=" + interactionGui.enabled()
-                + ", stability=" + stability.enabled());
+                + ", stability=" + stability.enabled()
+                + ". Developer: api=" + developerApi.enabled()
+                + ", vault=" + developerApi.integrationAvailable("vault"));
     }
 
     private void migrateConfig() {
@@ -130,10 +143,20 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().set(stabilityMarker, true);
             getLogger().info("Config migration: v1.3.2 stability/inbox defaults merged into config.yml.");
         }
+
+        String developerMarker = "migrations.developer-api-v1_4_0";
+        if (!getConfig().getBoolean(developerMarker, false)) {
+            getConfig().options().copyDefaults(true);
+            getConfig().set(developerMarker, true);
+            getLogger().info("Config migration: v1.4.0 Developer API/integration defaults merged into config.yml.");
+        }
         saveConfig();
     }
 
-    @Override public void onDisable() { flush(); }
+    @Override public void onDisable() {
+        Bukkit.getServicesManager().unregisterAll(this);
+        flush();
+    }
 
     public void saveDataSoon() { dirty = true; }
     public void flush() { if (storage != null) storage.saveAll(); dirty = false; }
@@ -143,6 +166,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public InteractionManager interactions() { return interactions; }
     public InteractionGui interactionGui() { return interactionGui; }
     public PartyStabilityManager stability() { return stability; }
+    public DeveloperApiManager developerApi() { return developerApi; }
     public WarManager war() { return war; }
     public SeasonManager season() { return season; }
     public RewardHallManager hall() { return hall; }
