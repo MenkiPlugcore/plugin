@@ -1,6 +1,6 @@
 # MENKIESTESParty Administration & Moderation
 
-Applies to **MENKIESTESParty v1.6.1**.
+Applies to **MENKIESTESParty v1.6.2**.
 
 The administration layer is designed for live-server support and moderation. It does not replace normal Party role rules and it is not exposed through the public `MenkiPartyAPI v1.0`.
 
@@ -23,14 +23,51 @@ The administration layer is designed for live-server support and moderation. It 
 /partyadmin inspect <party>
 /partyadmin inspect <party> verbose
 /partyadmin health
-/partyadmin audit [page]
+/partyadmin pending
+/partyadmin recovery <party>
 ```
 
 `inspect` shows Party key/display, owner, member count, level/XP, current Project, recruitment mode, applications, Contracts, freeze state and active storage backend.
 
-`inspect ... verbose` additionally checks owner/player indexes, duplicate OWNER role fields, applications, Contracts, Diplomacy pairs, Project state and storage synchronization indicators. This diagnostic runs only when requested; it does not add a periodic heavy scan.
+`inspect ... verbose` additionally checks owner/player indexes, duplicate OWNER role fields, applications, Contracts, Diplomacy pairs, Project state and storage synchronization indicators. The diagnostic runs only when requested.
 
-`health` reports Party count, frozen count, pending confirmations, audit count, archive-directory writability, storage/API health and a command-driven cross-index warning count.
+`health` in v1.6.2 additionally reports pending storage writes/age, failed storage writes, last storage health probe, recent failed administration actions, archive/export directory writability and a command-driven cross-index warning count.
+
+### Pending dangerous action
+
+```text
+/partyadmin pending
+```
+
+Shows the calling staff member's most recent staged dangerous action as reconstructed from the durable moderation audit trail: action, target, request time, expiry state, remaining time and known wrong-token attempts. The global in-memory pending count is also shown.
+
+The command intentionally **does not redisplay the confirmation token**. The original token remains visible only when the action is staged. If the audit trail indicates a terminal event such as cancellation, expiry, replay, logout cleanup or execution, the report does not present that action as pending.
+
+## Party search
+
+```text
+/partyadmin search <query> [page]
+```
+
+Searches stable Party keys and display names. This is command-driven and does not add a background index scanner.
+
+## Repair and dry-run
+
+Normal deterministic repair remains:
+
+```text
+/partyadmin repair <party>
+```
+
+v1.6.2 adds a no-write preview:
+
+```text
+/partyadmin repair <party> dryrun
+```
+
+Dry-run mirrors the conservative repair rules and reports planned deterministic changes such as restoring the stored Owner to the member roster, correcting Owner/member player indexes, fixing Owner role fields, demoting extra `OWNER` role fields to `OFFICER`, and removing invalid/orphan player indexes.
+
+If the stored Owner UUID is missing/invalid, the plan is marked unsafe and **does not guess a replacement Owner**. Dry-run does not modify Party data and does not apply the plan automatically.
 
 ## Verified export and archive
 
@@ -46,9 +83,7 @@ plugins/MENKIESTESParty/admin-exports/
 plugins/MENKIESTESParty/archives/
 ```
 
-v1.6.1 no longer reuses an existing filename. If the generated name already exists, a numeric suffix is added instead of overwriting it.
-
-Each v1.6.1 snapshot is checked after writing for its Party key, format marker, owner and member count. A SHA-256 sidecar is then written next to it:
+v1.6.1+ snapshots use collision-safe filenames. Each current-format snapshot is checked after writing for its Party key, format marker, owner and member count, then receives a SHA-256 sidecar:
 
 ```text
 PARADOX-20260910-143000-123-export.yml
@@ -56,6 +91,69 @@ PARADOX-20260910-143000-123-export.yml.sha256
 ```
 
 The snapshot contains Party data, member indexes, related Contracts, applications, Diplomacy state and relevant moderation audit entries.
+
+## Snapshot verification — v1.6.2
+
+```text
+/partyadmin snapshot verify <archive|export> <filename.yml>
+```
+
+Only basename `.yml` files directly inside the approved `archives/` or `admin-exports/` directory are accepted. Directory traversal, nested paths and unsupported buckets are rejected before filesystem access.
+
+Verification statuses:
+
+| Status | Meaning |
+| --- | --- |
+| `VERIFIED` | SHA-256 sidecar matches and the current `MENKIESTESParty-admin-snapshot-v1` marker is present |
+| `LEGACY_UNVERIFIED` | Snapshot exists but has no sidecar, or uses an older/unknown format; this is not automatically corruption |
+| `CORRUPT` | Sidecar is malformed, references another filename, or SHA-256 mismatches |
+| `METADATA_INVALID` | YAML exists but required Party metadata such as `meta.party-key` is missing |
+| `MISSING` | Requested snapshot file does not exist |
+
+`LEGACY_UNVERIFIED` exists for backward compatibility with v1.6.0-era snapshots that predate mandatory sidecars.
+
+## Read-only recovery report — v1.6.2
+
+```text
+/partyadmin recovery <party>
+```
+
+The command scans recent `.yml` files in `archives/` and `admin-exports/` only when requested. It can resolve a live Party or, when the Party has already been deleted, match snapshot metadata by stable Party key/display name.
+
+The report includes:
+
+- whether the live Party still exists;
+- whether deterministic live repair is available;
+- counts of verified, legacy-unverified and corrupt/invalid snapshots;
+- the newest usable snapshot candidate;
+- candidate purpose, timestamp and SHA-256 when available.
+
+Recovery is intentionally **read-only in v1.6.2**. It never restores, merges or overwrites live Party data. Automatic restore is deferred until snapshot schema/version migration has a stronger formal contract.
+
+## Audit log
+
+Administration audit entries live at:
+
+```text
+interactions.yml -> moderation.audit
+```
+
+Standard pagination remains:
+
+```text
+/partyadmin audit [page]
+```
+
+v1.6.2 adds:
+
+```text
+/partyadmin audit search <keyword> [page]
+/partyadmin audit filter <party|staff|action|result> <value> [page]
+```
+
+`search` checks actor, action, Party, result and detail. `filter` restricts matching to the selected field. Entries remain newest-first and bounded by the normal retention/max-entry settings.
+
+Important v1.6.1+ result states include `PENDING`, `SUCCESS`, `FAILED`, `PARTIAL` and `CANCELLED`. Wrong-token attempts, expiry, replacement, logout cleanup, archive verification failure and dangerous-action post-condition failure are therefore queryable instead of silently disappearing.
 
 ## Common administration
 
@@ -66,34 +164,17 @@ The snapshot contains Party data, member indexes, related Contracts, application
 /partyadmin freeze <party> [reason]
 /partyadmin unfreeze <party>
 /partyadmin xp <party> <set|add|remove> <amount>
-/partyadmin repair <party>
 ```
 
-### Force join/remove
+Staff can bypass normal recruitment flow, but normal Party slot limits still apply by default. A player who owns another Party cannot be moved until ownership is transferred or that Party is disbanded. Roster mutation is refused while Party War is PREPARE/ACTIVE, and the Party owner cannot be force-removed.
 
-Staff can bypass normal recruitment flow, but normal Party slot limits still apply by default. A player who owns another Party cannot be moved until ownership is transferred or that Party is disbanded.
+Rename changes only the public/display name. The stable internal Party key does **not** change, avoiding cascading migrations across Contracts, Diplomacy, War history and API consumers.
 
-Roster mutation is refused while Party War is PREPARE/ACTIVE to protect scoring/session integrity. The Party owner cannot be force-removed; ownership must be transferred first.
+Freeze is reversible. By default it blocks roster changes, Contract/Diplomacy mutations, recruitment changes, application accept/deny, and new applications/OPEN joins into the frozen Party. The previous recruitment mode is restored on unfreeze. Project/Skill/Division management remains allowed by default unless changed in `administration.yml`.
 
-### Rename
+## Dangerous actions — token flow
 
-Rename changes only the public/display name. The stable internal Party key does **not** change. This avoids cascading migrations across Contracts, Diplomacy, War history and API consumers.
-
-### Freeze
-
-Freeze is reversible. By default it blocks invite/accept/leave/kick/promote/demote/disband roster changes, Contract mutations, Diplomacy mutations, recruitment changes, application accept/deny, and new applications/OPEN joins into the frozen Party.
-
-The current recruitment mode is saved, recruitment becomes `CLOSED`, and the previous mode is restored on unfreeze. Project/Skill/Division management remains allowed by default unless changed in `administration.yml`.
-
-### Repair
-
-`repair` remains conservative. It repairs only deterministic owner/member/player-index problems. If the Party owner UUID is missing or invalid, the command stops instead of guessing a new owner.
-
-v1.6.1 adds a post-repair integrity pass and reports the warning count before and after the repair, including residual warnings that still need manual review.
-
-## Dangerous actions — v1.6.1 token flow
-
-These commands are staged behind the v1.6.1 confirmation gate:
+These commands remain staged behind the v1.6.1 exactly-once confirmation gate:
 
 ```text
 /partyadmin transfer <party> <player>
@@ -102,77 +183,31 @@ These commands are staged behind the v1.6.1 confirmation gate:
 /partyadmin disband <party>
 ```
 
-The command returns a six-character token, for example:
+The command returns a six-character token. Confirm with:
 
 ```text
-Confirmation token: 7KH3QW
+/partyadmin confirm <token>
 ```
 
-Confirm with the exact token:
-
-```text
-/partyadmin confirm 7KH3QW
-```
-
-or cancel it:
+or cancel with:
 
 ```text
 /partyadmin cancel
 ```
 
-The default confirmation window is 30 seconds. A ticket belongs to the staff actor that created it and is consumed exactly once. Replays cannot execute the mutation twice. Missing/wrong/expired tokens do not execute the action. Three wrong attempts cancel the pending action by default. Pending player confirmations are cleared when that staff member disconnects.
+Default confirmation lifetime is 30 seconds. The ticket belongs to the staff actor, is consumed exactly once, and three wrong attempts cancel it by default. Pending player confirmations are cleared when that staff member disconnects.
 
-Only one v1.6.1 dangerous ticket is kept per staff actor. Staging a new dangerous action replaces the previous ticket and records the replacement in the audit log.
-
-### Transfer Owner
-
-The target is validated before the ticket is staged and must already be a member of the Party. The previous Owner becomes Officer. Transfer is refused during Party War roster lock. After execution, v1.6.1 verifies that the target UUID is actually the stored Owner.
-
-### Reset Project
-
-The Party must have an active Project before the ticket is staged. After execution, v1.6.1 verifies the active Project progress is zero.
-
-### Reset Contract
-
-Only an `ACTIVE` Contract can be staged for reset. Progress becomes `0` and contributor counters are cleared. Terminal Contract history is never reopened automatically. A post-condition verifies the Contract is still ACTIVE with zero progress.
-
-### Disband
-
-Before the existing v1.6.0 archive-first disband implementation runs, v1.6.1 creates an **independent verified safety snapshot plus SHA-256 sidecar**. If this safety snapshot cannot be written and verified, disband is aborted before Party data is removed.
-
-The final post-condition requires the Party key to no longer exist. Related active/pending Contracts are closed by the v1.6.0 disband implementation and Party indexes/interactions are cleaned as before.
-
-## Audit log
-
-Administration audit entries live at:
-
-```text
-interactions.yml -> moderation.audit
-```
-
-v1.6.1 additionally records `result` for its safety events. Important outcomes include:
-
-```text
-PENDING
-SUCCESS
-FAILED
-PARTIAL
-CANCELLED
-```
-
-Wrong-token attempts, expiry, replacement, logout cleanup, archive verification failure and dangerous-action post-condition failure are therefore visible instead of silently disappearing.
-
-Retention and maximum entries remain controlled by `administration.yml`.
+Transfer requires the target to already be a Party member. Reset Project requires an active Project. Reset Contract only accepts `ACTIVE` status. Disband is refused while Party War roster locking is active and creates an independent verified safety snapshot before the existing archive-first deletion path executes.
 
 ## Permissions
 
 | Permission | Purpose |
 | --- | --- |
 | `menkiestesparty.admin` | Full legacy/root admin; bypasses granular checks |
-| `menkiestesparty.admin.inspect` | List, search, health, inspect, verbose inspect and export |
-| `menkiestesparty.admin.modify` | Common/reversible administration and archive |
-| `menkiestesparty.admin.dangerous` | Stage/token-confirm owner/reset/disband actions |
-| `menkiestesparty.admin.audit` | Read staff audit history |
+| `menkiestesparty.admin.inspect` | List/search/health/inspect, snapshot verification and read-only recovery |
+| `menkiestesparty.admin.modify` | Common/reversible administration, archive, repair and repair dry-run |
+| `menkiestesparty.admin.dangerous` | Stage/token-confirm high-impact actions and inspect own pending state |
+| `menkiestesparty.admin.audit` | Read/search/filter staff audit history |
 | `menkiestesparty.admin.gui` | Open Admin Browser/Inspect GUI |
 
 All granular permissions default to OP.
@@ -206,6 +241,15 @@ administration:
   snapshots:
     format: MENKIESTESParty-admin-snapshot-v1
     checksum: SHA-256
+
+  observability:
+    enabled: true
+    audit-page-size: 10
+    failed-action-window-hours: 24
+    snapshot-scan-limit: 200
+    repair-dryrun-max-lines: 20
 ```
 
-The v1.6.1 safety layer is command/GUI driven. It does not add a new per-tick administration scan, external database requirement or public API breaking change.
+Existing v1.6.1 `administration.yml` files remain valid. Missing v1.6.2 observability keys use the defaults shown above.
+
+The recovery/observability layer is command-driven. It does not add a per-tick administration scan, new external database requirement, automatic restore path or public API breaking change.

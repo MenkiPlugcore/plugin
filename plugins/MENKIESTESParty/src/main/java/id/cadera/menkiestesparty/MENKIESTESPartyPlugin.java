@@ -18,6 +18,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private PartyStabilityManager stability;
     private AdministrationManager administration;
     private AdministrationStabilityManager administrationStability;
+    private AdministrationRecoveryManager administrationRecovery;
     private DeveloperApiManager developerApi;
     private ApiHardeningManager apiHardening;
     private WarManager war;
@@ -33,13 +34,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.schedulerCompat = new SchedulerCompat(this);
 
         if (!schedulerCompat.runtimeAllowed()) {
-            getLogger().severe("Folia detected. MENKIESTESParty v1.6.1 blocks Folia by default because full region-thread safety is not certified yet.");
+            getLogger().severe("Folia detected. MENKIESTESParty v1.6.2 blocks Folia by default because full region-thread safety is not certified yet.");
             getLogger().severe("Use compatibility.folia.experimental=true only for controlled testing. Core data was not loaded.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (schedulerCompat.foliaDetected()) {
-            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.6.1.");
+            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.6.2.");
         }
 
         try {
@@ -61,6 +62,8 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.administration = new AdministrationManager(this, parties, progression, interactions, storage);
         this.administrationStability = new AdministrationStabilityManager(
                 this, administration, parties, progression, interactions, storage);
+        this.administrationRecovery = new AdministrationRecoveryManager(
+                this, administrationStability, administration, parties, storage);
         this.interactionGui = new InteractionGui(this, parties, storage, interactions);
         this.stability = new PartyStabilityManager(this, parties, storage, interactions);
         this.developerApi = new DeveloperApiManager(this, parties, progression, interactions, storage);
@@ -81,8 +84,11 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             storageCommand.setTabCompleter(storageAdmin);
         }
 
-        // v1.6.1 safety wrapper is first so confirmation/export/repair guards
-        // can cancel a route before the v1.6.0 administration listener sees it.
+        // v1.6.2 observability wrapper is first, followed by the v1.6.1 safety
+        // wrapper, so read-only recovery/diagnostic routes are handled before
+        // legacy admin preprocess listeners while all mutations still delegate
+        // through the v1.6.1 safety boundary.
+        Bukkit.getPluginManager().registerEvents(administrationRecovery, this);
         Bukkit.getPluginManager().registerEvents(administrationStability, this);
         Bukkit.getPluginManager().registerEvents(administration, this);
         Bukkit.getPluginManager().registerEvents(new PartyListener(this, parties, war), this);
@@ -153,6 +159,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
                 + ", stability=" + stability.enabled()
                 + ". Administration: enabled=" + administration.enabled()
                 + ", safety=" + administrationStability.enabled()
+                + ", recovery-observability=" + administrationRecovery.enabled()
                 + ". Developer: api=" + developerApi.enabled()
                 + ", api-health=" + apiHardening.healthLabel()
                 + ", vault=" + developerApi.integrationAvailable("vault"));
@@ -251,6 +258,12 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().set(administrationStabilityMarker, true);
             getLogger().info("Config migration: v1.6.1 Administration stability defaults merged.");
         }
+
+        String administrationObservabilityMarker = "migrations.administration-observability-v1_6_2";
+        if (!getConfig().getBoolean(administrationObservabilityMarker, false)) {
+            getConfig().set(administrationObservabilityMarker, true);
+            getLogger().info("Config migration: v1.6.2 Administration recovery/observability marker applied.");
+        }
         saveConfig();
     }
 
@@ -290,6 +303,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public PartyStabilityManager stability() { return stability; }
     public AdministrationManager administration() { return administration; }
     public AdministrationStabilityManager administrationStability() { return administrationStability; }
+    public AdministrationRecoveryManager administrationRecovery() { return administrationRecovery; }
     public DeveloperApiManager developerApi() { return developerApi; }
     public ApiHardeningManager apiHardening() { return apiHardening; }
     public WarManager war() { return war; }

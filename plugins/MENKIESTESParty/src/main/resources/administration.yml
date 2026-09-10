@@ -1,4 +1,4 @@
-# MENKIESTESParty v1.6.1 - Administration Stability & Safety
+# MENKIESTESParty v1.6.2 - Admin Recovery & Observability
 # Staff tooling remains command/GUI driven; no continuous heavy admin scan.
 administration:
   enabled: true
@@ -6,7 +6,7 @@ administration:
   # Lifetime of a staged dangerous action.
   confirmation-seconds: 30
 
-  # v1.6.1: dangerous actions use a per-staff one-time token. A wrong token
+  # v1.6.1+: dangerous actions use a per-staff one-time token. A wrong token
   # never consumes the action until max-attempts is reached.
   confirmation:
     require-token: true
@@ -32,7 +32,16 @@ administration:
     allow-over-cap: false
 
   snapshots:
-    # v1.6.1 admin export/archive and pre-disband safety snapshots always use
-    # unique filenames, YAML content verification and a .sha256 sidecar.
+    # v1.6.1+ admin export/archive and pre-disband safety snapshots use unique
+    # filenames, YAML content verification and a .sha256 sidecar.
     format: MENKIESTESParty-admin-snapshot-v1
     checksum: SHA-256
+
+  # v1.6.2 recovery/observability commands execute only when requested.
+  # Recovery is intentionally read-only; no snapshot is restored automatically.
+  observability:
+    enabled: true
+    audit-page-size: 10
+    failed-action-window-hours: 24
+    snapshot-scan-limit: 200
+    repair-dryrun-max-lines: 20

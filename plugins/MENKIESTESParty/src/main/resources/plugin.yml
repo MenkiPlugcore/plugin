@@ -1,9 +1,9 @@
 name: MENKIESTESParty
-version: 1.6.1
+version: 1.6.2
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
-description: Modular Paper Party/Guild framework with hardened administration safety, optional storage, public API, progression, interactions and Party War.
+description: Modular Paper Party/Guild framework with hardened administration recovery/observability, optional storage, public API, progression, interactions and Party War.
 softdepend: [PlaceholderAPI, GriefPrevention, Vault]
 commands:
   party:
@@ -98,23 +98,23 @@ commands:
     usage: /partystorage [status|verify|flush|backup|migrate|rollback]
   partyadmin:
     aliases: [padmin, mpartyadmin]
-    description: MENKIESTESParty administration, moderation and safety diagnostics
-    usage: /partyadmin [list|search|inspect|health|forcejoin|remove|transfer|rename|freeze|unfreeze|xp|repair|resetproject|resetcontract|export|archive|disband|audit|confirm|cancel]
+    description: MENKIESTESParty administration, moderation, recovery and observability tooling
+    usage: /partyadmin [list|search|inspect|health|pending|forcejoin|remove|transfer|rename|freeze|unfreeze|xp|repair|resetproject|resetcontract|export|archive|disband|audit|snapshot|recovery|confirm|cancel]
 permissions:
   menkiestesparty.admin:
     description: Full MENKIESTESParty administration; also bypasses granular admin checks
     default: op
   menkiestesparty.admin.inspect:
-    description: View Party admin browser, search, health, verbose inspect and export support snapshots
+    description: View Party admin browser, search, health, verbose inspect, snapshots and read-only recovery reports
     default: op
   menkiestesparty.admin.modify:
-    description: Perform reversible/common Party administration changes
+    description: Perform reversible/common Party administration changes and repair/dry-run tooling
     default: op
   menkiestesparty.admin.dangerous:
-    description: Stage and token-confirm high-impact owner/reset/disband administration actions
+    description: Stage/token-confirm high-impact actions and inspect own pending confirmation state
     default: op
   menkiestesparty.admin.audit:
-    description: View bounded staff audit history
+    description: View, search and filter bounded staff audit history
     default: op
   menkiestesparty.admin.gui:
     description: Open the Party administration inventory GUI

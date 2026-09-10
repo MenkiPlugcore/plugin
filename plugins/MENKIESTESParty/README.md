@@ -1,4 +1,4 @@
-# MENKIESTESParty v1.6.1
+# MENKIESTESParty v1.6.2
 
 Modular Paper Party/Guild framework by **CADERA** for Paper 1.21.11 / Java 21.
 
@@ -36,16 +36,18 @@ SQL is **not required**. YAML remains a first-class supported backend.
 
 See [`STORAGE.md`](STORAGE.md).
 
-## Administration — v1.6.1
+## Administration — v1.6.2
 
 ```text
 /partyadmin
 /party admin ...
 ```
 
-v1.6.0 introduced the Admin Browser/Inspect GUI, force join/remove, owner transfer, display rename, reversible Party freeze, XP controls, conservative repair, Project/Contract reset, export/archive, archive-first disband and bounded staff audit history.
+v1.6.0 introduced the Admin Browser/Inspect GUI and live moderation controls. v1.6.1 hardened high-impact actions with exactly-once token confirmation, failed-action auditing and verified SHA-256 snapshots.
 
-v1.6.1 hardens that layer with per-staff one-time confirmation tokens, exactly-once dangerous-action consumption, failed-action auditing, verified SHA-256 admin snapshots, collision-safe exports, `/partyadmin health`, Party search, verbose integrity inspection and post-repair verification.
+v1.6.2 adds command-driven **Admin Recovery & Observability**: pending-action inspection without token redisplay, repair dry-run, audit search/filter, snapshot checksum verification, read-only recovery reports, and deeper storage/admin health diagnostics.
+
+Recovery remains deliberately read-only: v1.6.2 never restores or overwrites Party data automatically.
 
 See [`ADMINISTRATION.md`](ADMINISTRATION.md).
 
@@ -71,8 +73,8 @@ Every MENKIESTESParty version must be documented in GitHub as part of the releas
 Release documentation currently includes:
 
 - [`CHANGELOG.md`](CHANGELOG.md) — chronological version history
-- [`RELEASE_NOTES_v1.6.1.md`](RELEASE_NOTES_v1.6.1.md) — current release notes
-- [`ADMINISTRATION.md`](ADMINISTRATION.md) — admin/moderation wiki
+- [`RELEASE_NOTES_v1.6.2.md`](RELEASE_NOTES_v1.6.2.md) — current release notes
+- [`ADMINISTRATION.md`](ADMINISTRATION.md) — admin/moderation/recovery wiki
 - [`STORAGE.md`](STORAGE.md) — storage/migration guide
 - [`API.md`](API.md) — public API guide
 - [`API_COMPATIBILITY.md`](API_COMPATIBILITY.md) — API compatibility policy
@@ -83,10 +85,12 @@ Release documentation currently includes:
 - Storage: YAML
 - SQL: optional
 - Administration: enabled for permitted staff only
-- Dangerous admin actions: token confirmation required
-- Admin snapshots: content-verified + SHA-256 sidecar
+- Dangerous admin actions: exactly-once token confirmation required
+- Admin snapshots: content-verified + SHA-256 sidecar for current-format snapshots
+- Recovery: read-only; no automatic restore
+- Observability: command-driven; no continuous admin scan
 - Contract automatic Party XP: 0 unless configured
-- Folia: experimental only; not production-certified in v1.6.1
+- Folia: experimental only; not production-certified in v1.6.2
 - Public API: v1.0
 
 ## Build

@@ -2,6 +2,34 @@
 
 All notable MENKIESTESParty changes are documented here. Releases remain standalone/public-plugin oriented and preserve the custom MENKIESTES/CADERA project licensing while respecting bundled third-party notices.
 
+## 1.6.2 - 2026-09-10
+
+Admin Recovery & Observability Update.
+
+### Added
+
+- `/partyadmin pending` for token-hidden staged-action observability.
+- `/partyadmin repair <party> dryrun` deterministic no-write repair planning.
+- `/partyadmin audit search <keyword> [page]` across useful audit fields.
+- `/partyadmin audit filter <party|staff|action|result> <value> [page]` scoped querying.
+- `/partyadmin snapshot verify <archive|export> <filename.yml>` with approved-directory path enforcement and checksum validation.
+- `/partyadmin recovery <party>` read-only live/snapshot recovery report.
+- Enhanced `/partyadmin health` with storage queue/probe state and recent failed-action count.
+- Snapshot classification: `VERIFIED`, `LEGACY_UNVERIFIED`, `CORRUPT`, `METADATA_INVALID`, `MISSING`.
+- Bukkit-free audit-query, snapshot-verifier and repair-planner helpers plus regression tests.
+
+### Safety / Compatibility
+
+- Recovery is read-only; v1.6.2 never automatically restores, merges or overwrites Party data.
+- Repair dry-run never mutates Party data and refuses to guess a missing/invalid Owner.
+- Legacy snapshots without SHA-256 sidecars are labelled `LEGACY_UNVERIFIED`, not falsely treated as corrupt.
+- Snapshot verification rejects directory traversal, nested paths and unsupported snapshot buckets.
+- Existing v1.6.1 administration mutations continue through the exactly-once token safety layer.
+- `MenkiPartyAPI.API_VERSION` remains `1.0`.
+- YAML remains the default local backend; SQLite/MySQL remain optional.
+- No new required runtime dependency or external service is introduced.
+- Java 21 build, MySQL 8.4 integration, Java 25 runtime probe and automatic GitHub Release remain production gates.
+
 ## 1.6.1 - 2026-09-10
 
 Administration Stability & Safety Patch.
