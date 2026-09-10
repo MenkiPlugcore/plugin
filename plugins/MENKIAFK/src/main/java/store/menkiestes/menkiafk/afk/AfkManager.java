@@ -3,6 +3,10 @@ package store.menkiestes.menkiafk.afk;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import store.menkiestes.menkiafk.MenkiAfkPlugin;
+import store.menkiestes.menkiafk.api.AfkSessionSnapshot;
+import store.menkiestes.menkiafk.api.AfkSessionType;
+import store.menkiestes.menkiafk.api.event.PlayerEnterAfkEvent;
+import store.menkiestes.menkiafk.api.event.PlayerLeaveAfkEvent;
 import store.menkiestes.menkiafk.stats.StatsManager;
 import store.menkiestes.menkiafk.util.Text;
 
@@ -31,7 +35,9 @@ public final class AfkManager {
         UUID id = player.getUniqueId();
         AfkSession removed = sessions.remove(id);
         if (removed != null) {
-            statsManager.finishSession(id, System.currentTimeMillis());
+            long now = System.currentTimeMillis();
+            statsManager.finishSession(id, now);
+            fireLeaveEvent(player, removed, now);
         }
         lastActivity.remove(id);
         nextManualAfk.remove(id);
@@ -39,6 +45,8 @@ public final class AfkManager {
 
     public void shutdown() {
         long now = System.currentTimeMillis();
+        // Do not fire public lifecycle events during plugin disable. Other plugins may already
+        // be shutting down; this method only finalizes persistence and clears runtime state.
         statsManager.finishAllSessions(now);
         sessions.clear();
         lastActivity.clear();
@@ -91,12 +99,15 @@ public final class AfkManager {
                 ? Text.coloredReason(rawReason)
                 : Text.plainReason(rawReason);
         long now = System.currentTimeMillis();
-        sessions.put(player.getUniqueId(), new AfkSession(reason, now, AfkType.MANUAL));
+        AfkSession session = new AfkSession(reason, now, AfkType.MANUAL);
+        sessions.put(player.getUniqueId(), session);
         statsManager.startSession(player, now, AfkType.MANUAL);
         lastActivity.put(player.getUniqueId(), now);
 
         long cooldown = Math.max(0L, plugin.getConfig().getLong("manual-afk.cooldown-seconds", 8L)) * 1000L;
         nextManualAfk.put(player.getUniqueId(), now + cooldown);
+
+        fireEnterEvent(player, session);
 
         if (plugin.getConfig().getBoolean("broadcast.on-afk", true) && !isSilent(player)) {
             String msg = Text.replace(Text.cfg(plugin, "messages.afk-broadcast"),
@@ -114,8 +125,11 @@ public final class AfkManager {
                 "%minutes%", roundedMinutes,
                 "%seconds%", timeoutSeconds));
         long now = System.currentTimeMillis();
-        sessions.put(player.getUniqueId(), new AfkSession(reason, now, AfkType.AUTO));
+        AfkSession session = new AfkSession(reason, now, AfkType.AUTO);
+        sessions.put(player.getUniqueId(), session);
         statsManager.startSession(player, now, AfkType.AUTO);
+
+        fireEnterEvent(player, session);
 
         if (plugin.getConfig().getBoolean("broadcast.on-afk", true) && !isSilent(player)) {
             String msg = Text.replace(Text.cfg(plugin, "messages.auto-afk-broadcast"),
@@ -132,6 +146,7 @@ public final class AfkManager {
         long now = System.currentTimeMillis();
         long duration = now - session.startedAt();
         statsManager.finishSession(player.getUniqueId(), now);
+        fireLeaveEvent(player, session, now);
 
         if (broadcast && plugin.getConfig().getBoolean("broadcast.on-return", true) && !isSilent(player)) {
             String msg = Text.replace(Text.cfg(plugin, "messages.return-broadcast"),
@@ -141,6 +156,19 @@ public final class AfkManager {
 
         deliverRemembered(player, session);
         return true;
+    }
+
+    private void fireEnterEvent(Player player, AfkSession session) {
+        Bukkit.getPluginManager().callEvent(new PlayerEnterAfkEvent(player, publicSession(player.getUniqueId(), session)));
+    }
+
+    private void fireLeaveEvent(Player player, AfkSession session, long endedAt) {
+        Bukkit.getPluginManager().callEvent(new PlayerLeaveAfkEvent(player, publicSession(player.getUniqueId(), session), endedAt));
+    }
+
+    private AfkSessionSnapshot publicSession(UUID playerId, AfkSession session) {
+        AfkSessionType type = session.type() == AfkType.AUTO ? AfkSessionType.AUTO : AfkSessionType.MANUAL;
+        return new AfkSessionSnapshot(playerId, session.reason(), session.startedAt(), type);
     }
 
     private boolean isSilent(Player player) {

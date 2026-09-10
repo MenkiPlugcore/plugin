@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.0 Universal — Public API Update
+
+- Added a stable read-only `MenkiAfkAPI` service registered through Bukkit `ServicesManager`.
+- Added `MenkiAfkAPI.get()` convenience lookup for consuming plugins after MENKIAFK has enabled.
+- Added immutable `AfkSessionSnapshot` and `AfkStatisticsSnapshot` public data models.
+- Added public `AfkSessionType` with `MANUAL` and `AUTO` values.
+- Added `PlayerEnterAfkEvent`, fired after AFK state has been committed.
+- Added `PlayerLeaveAfkEvent`, fired after AFK state has been removed during normal runtime, including AFK quit/kick cleanup.
+- Public lifecycle events are informational and intentionally not cancellable.
+- Plugin/server disable does not emit leave events; shutdown only finalizes statistics and clears runtime state.
+- Added `API.md` with dependency, ServicesManager, statistics, session, and event examples.
+- Public API is read-only: no force-AFK/force-return mutation methods and no raw internal managers/YAML are exposed.
+- No new scheduler, database, packet library, NMS access, GUI framework, economy dependency, or server-specific integration was added.
+- `stats.yml` remains schema v3 and compatible with existing v1.2.0-v1.4.1 data.
+- Preserved the Paper 1.21.11 -> 26.2 universal compatibility target and Java 21 bytecode baseline.
+
 ## 1.4.1 Universal — Stability Patch
 
 - Hardened async chat handling so a delayed main-thread continuation cannot update AFK state after the player has disconnected.
