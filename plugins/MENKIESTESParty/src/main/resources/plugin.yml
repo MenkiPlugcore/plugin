@@ -1,9 +1,9 @@
 name: MENKIESTESParty
-version: 1.1.0
+version: 1.2.0
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
-description: Native Paper Party system with weekly quests, daily missions, relic progression, open-world Party War and manual admin rewards.
+description: Modular Paper Party system with missions, projects, skill tree, divisions, dynamic identity and Party War.
 softdepend: [PlaceholderAPI, GriefPrevention]
 commands:
   party:
@@ -24,6 +24,26 @@ commands:
     aliases: [pdaily]
     description: Daily Party Mission
     usage: /partydaily
+  partyproject:
+    aliases: [pproject]
+    description: Party Project command
+    usage: /partyproject
+  partyskill:
+    aliases: [pskill]
+    description: Party Skill Tree command
+    usage: /partyskill
+  partydivision:
+    aliases: [pdivision]
+    description: Party Division command
+    usage: /partydivision
+  partyidentity:
+    aliases: [pidentity]
+    description: Dynamic Party Identity
+    usage: /partyidentity
+  partyprofile:
+    aliases: [pprofile]
+    description: Party progression profile
+    usage: /partyprofile
 permissions:
   menkiestesparty.admin:
     description: Full MENKIESTESParty administration

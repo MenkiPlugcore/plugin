@@ -1,61 +1,122 @@
-# MENKIESTESParty v1.1.0
+# MENKIESTESParty v1.2.0
 
-Native Paper Party system untuk MENKIESTES/MOONSIGN, menggunakan penyimpanan YAML lokal.
+Native Paper Party/Guild framework by CADERA. Designed for Paper 1.21.11 / Java 21 with local YAML storage and no required database.
 
-## Update v1.1.0
+## v1.2.0 — Party Progression Update
 
-- Daily Party Mission ditambahkan sebagai progress bersama seluruh anggota Party.
-- Weekly Quest lama tetap aktif untuk progres Party Relic.
-- Party War sekarang fokus ke kompetisi skor/kill.
-- Pemenang Party War hanya menerima Party XP (`war.party-xp`, default 250).
-- Tidak ada War Chest, Party Hall, antrean item, atau reward item otomatis dari Party War.
-- Reward senjata/custom item diberikan manual oleh admin langsung ke perwakilan team.
-- `/partyhall`, `/party hall`, `/party claimchest`, dan `/party rewards` sudah tidak digunakan sebagai sistem reward.
+MENKIESTESParty now adds a progression layer beyond normal team commands while keeping every major feature optional.
 
-## Daily Mission
+### Party Projects
 
-Default:
+One shared long-term objective can be active per Party. Default projects:
 
-| Mission | Goal | Party XP |
-| --- | ---: | ---: |
-| Mining | 150 | 40 |
-| Hunter | 30 | 50 |
-| Farmer | 80 | 35 |
+| ID | Type | Goal | Party XP |
+| --- | --- | ---: | ---: |
+| `mining_expedition` | Mining | 2500 | 300 |
+| `monster_hunt` | Hunter | 500 | 350 |
+| `harvest_drive` | Farmer | 1500 | 250 |
 
-Daily Mission reset otomatis ketika tanggal server berganti. Progress bersifat shared untuk satu Party.
+Owner/Officer can start or cancel projects. Member contributions are shared and saved in `parties.yml`.
 
-Command:
+Commands:
 
-- `/party daily`
-- `/partydaily`
-- `/partydaily resetall` — admin
+- `/party project`
+- `/party project start <id>`
+- `/party project cancel`
+- `/partyproject` / `/pproject`
 
-## Party War
+### Party Skill Tree
 
-Admin:
+Party Level automatically provides Skill Points: 1 point for every level after Level 1 by default. Only the Owner spends Party Skill Points.
 
-- `/partywar start [durasi] [target] [prepare]`
-- `/partywar finish`
-- `/partywar cancel`
+Default branches:
 
-Player:
+- COMBAT — improves Hunter Project progress.
+- LABOR — improves Mining/Farming Project progress.
+- COMMAND — improves Party XP rewarded by completed Projects.
 
-- `/partywar status`
-- `/partywar top`
-- `/partywar hunt`
+Commands:
 
-War tetap menyimpan history, skor, kill, death, combat participation, dan pemenang. Reward fisik tidak dibuat plugin.
+- `/party skill`
+- `/party skill unlock <node>`
+- `/partyskill` / `/pskill`
+
+### Party Divisions
+
+Divisions do not replace Owner/Officer/Member roles. They are an additional specialization layer.
+
+Default divisions:
+
+- Combat Division — Hunter Project contribution bonus.
+- Resource Division — Mining/Farming Project contribution bonus.
+- Support Division — small bonus to all Project contribution.
+
+Commands:
+
+- `/party division`
+- `/party division join <id|none>`
+- `/party division set <player> <id|none>` — Owner/Officer
+- `/partydivision` / `/pdivision`
+
+### Dynamic Party Identity
+
+Identity is not selected manually. It is calculated from the Party's recent activity using a rolling 30-day window by default.
+
+Available identities:
+
+- Developing
+- Warlike
+- Industrial
+- Agrarian
+- Project Focused
+- Balanced
+
+Commands:
+
+- `/party identity`
+- `/partyidentity` / `/pidentity`
+
+### Party Profile
+
+`/party profile` or `/partyprofile` shows Party Level, XP, member count, Identity, Skill Points, member Division, and active Project.
+
+## Modular configuration
+
+Each v1.2 feature can be disabled independently:
+
+```yaml
+modules:
+  projects: true
+  skill-tree: true
+  divisions: true
+  identity: true
+```
+
+Core Party, Weekly Quest, Daily Mission, Party Relic, Party War and Season remain compatible with v1.1.0 data.
+
+## PlaceholderAPI
+
+Existing `%mparty_*%` placeholders remain. v1.2 adds:
+
+- `%mparty_identity%`
+- `%mparty_division%`
+- `%mparty_skill_points%`
+- `%mparty_project%`
+- `%mparty_project_progress%`
+
+## Upgrade from v1.1.0
+
+Replace the JAR and restart the server. Do not delete `plugins/MENKIESTESParty/`. Existing `parties.yml`, `wars.yml`, and `season.yml` remain valid. Missing v1.2 config defaults are merged into the existing `config.yml` on first startup.
 
 ## Requirements
 
-- Java 21
 - Paper 1.21.11
-- PlaceholderAPI opsional
+- Java 21
+- PlaceholderAPI optional
+- GriefPrevention optional
+- No Skript required
+- No database required
 
-Build:
+## License
 
-```bash
-gradle clean build
-```
-
-Output berada di `build/libs/`.
+MENKIESTES SOFTWARE LICENSE v1.0 — MENKIESTES dibuat oleh CADERA. See repository `LICENSE`.

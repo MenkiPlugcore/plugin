@@ -33,6 +33,20 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
         if(identifier.equalsIgnoreCase("season_points"))return party==null?"0":String.valueOf(plugin.season().points(party));
         if(identifier.equalsIgnoreCase("season_wins"))return party==null?"0":String.valueOf(plugin.season().wins(party));
         if(identifier.equalsIgnoreCase("season_name"))return plugin.season().name();
+
+        if(identifier.equalsIgnoreCase("identity"))return party==null?"None":plugin.progression().identityDisplay(plugin.progression().identity(party));
+        if(identifier.equalsIgnoreCase("division"))return party==null?"None":plugin.progression().divisionDisplay(plugin.progression().divisionOf(player.getUniqueId()));
+        if(identifier.equalsIgnoreCase("skill_points"))return party==null?"0":String.valueOf(plugin.progression().availableSkillPoints(party));
+        if(identifier.equalsIgnoreCase("project")){
+            if(party==null)return "None";
+            String id=plugin.progression().currentProject(party);
+            return id==null?"None":plugin.progression().projectName(id);
+        }
+        if(identifier.equalsIgnoreCase("project_progress")){
+            if(party==null)return "0/0";
+            String id=plugin.progression().currentProject(party);
+            return id==null?"0/0":((int)Math.floor(plugin.progression().projectProgress(party)))+"/"+plugin.progression().projectGoal(id);
+        }
         return null;
     }
 }

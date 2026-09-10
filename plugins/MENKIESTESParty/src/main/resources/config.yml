@@ -44,7 +44,6 @@ weekly-reset:
   time: '12:00'
 
 # Daily Mission adalah progress bersama seluruh anggota Party.
-# Reset dilakukan otomatis saat tanggal server berganti.
 daily-missions:
   enabled: true
   mining:
@@ -58,7 +57,6 @@ daily-missions:
     party-xp: 35
 
 # Relic sederhana: +1 progress untuk setiap Weekly Quest Party yang selesai.
-# Daily Mission tidak menambah Relic; reward-nya khusus Party XP.
 relic:
   level-2-missions: 3
   level-3-missions: 9
@@ -78,15 +76,118 @@ war:
   min-participation-minutes: 5
   lock-membership-during-active: true
   claim-pvp-override: true
-
-  # Satu-satunya reward otomatis Party War.
-  # Secara internal memakai reputation sebagai Party XP/level progress.
   party-xp: 250
-
-  # Tidak ada chest/item/reward otomatis.
-  # Senjata/item pemenang diberikan manual oleh admin ke perwakilan team.
 
 season:
   enabled-default: true
   default-name: Season_1
   champion-reputation: 1000
+
+# ---------------------------------------------------------------------------
+# v1.2.0 - Party Progression modules
+# Set false untuk mematikan fitur tanpa mematikan core Party.
+# ---------------------------------------------------------------------------
+modules:
+  projects: true
+  skill-tree: true
+  divisions: true
+  identity: true
+
+progression:
+  projects:
+    definitions:
+      mining_expedition:
+        display-name: 'Mining Expedition'
+        type: mining
+        goal: 2500
+        party-xp: 300
+      monster_hunt:
+        display-name: 'Monster Hunt'
+        type: hunter
+        goal: 500
+        party-xp: 350
+      harvest_drive:
+        display-name: 'Harvest Drive'
+        type: farmer
+        goal: 1500
+        party-xp: 250
+
+  # Party mendapatkan 1 Skill Point setiap naik 1 level setelah Level 1.
+  # Satu node = satu Skill Point. Node dapat dibuat/diubah lewat config.
+  skill-tree:
+    points-per-level: 1
+    nodes:
+      combat_i:
+        display-name: 'Combat I'
+        branch: COMBAT
+        min-level: 2
+        requires: ''
+        effects:
+          hunter-progress-bonus-percent: 10
+      combat_ii:
+        display-name: 'Combat II'
+        branch: COMBAT
+        min-level: 4
+        requires: combat_i
+        effects:
+          hunter-progress-bonus-percent: 20
+      labor_i:
+        display-name: 'Labor I'
+        branch: LABOR
+        min-level: 2
+        requires: ''
+        effects:
+          resource-progress-bonus-percent: 10
+      labor_ii:
+        display-name: 'Labor II'
+        branch: LABOR
+        min-level: 4
+        requires: labor_i
+        effects:
+          resource-progress-bonus-percent: 20
+      command_i:
+        display-name: 'Command I'
+        branch: COMMAND
+        min-level: 3
+        requires: ''
+        effects:
+          project-xp-bonus-percent: 10
+      command_ii:
+        display-name: 'Command II'
+        branch: COMMAND
+        min-level: 5
+        requires: command_i
+        effects:
+          project-xp-bonus-percent: 20
+
+  # Division bersifat optional dan tidak mengganti role Owner/Officer/Member.
+  divisions:
+    allow-self-select: true
+    types:
+      combat:
+        display-name: 'Combat Division'
+        effects:
+          hunter-progress-bonus-percent: 5
+      resource:
+        display-name: 'Resource Division'
+        effects:
+          resource-progress-bonus-percent: 5
+      support:
+        display-name: 'Support Division'
+        effects:
+          all-project-progress-bonus-percent: 3
+
+  # Identity tidak dapat dipilih manual. Aktivitas 30 hari terakhir membentuknya.
+  identity:
+    window-days: 30
+    min-activity: 50
+    dominance-percent: 45.0
+    project-completion-weight: 50
+    announce-change: true
+    labels:
+      DEVELOPING: 'Developing'
+      WARLIKE: 'Warlike'
+      INDUSTRIAL: 'Industrial'
+      AGRARIAN: 'Agrarian'
+      PROJECT_FOCUSED: 'Project Focused'
+      BALANCED: 'Balanced'
