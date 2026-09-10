@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.3.1 - 2026-09-10
+
+Interaction GUI Update.
+
+### Added
+
+- New Interaction Hub accessible from the main `/party` inventory GUI.
+- Inventory Party Browser for recruiting Parties with pagination, recruitment mode, level, member slots and relationship context.
+- Browser detail screen with one-click OPEN join, APPLICATION submit/cancel, Diplomacy shortcut and Contract creation shortcut.
+- Full Party Contract GUI with relevant Contract list, status sorting, progress bars, detail screen and expiry/deadline information.
+- GUI Contract creation wizard: target Party -> objective type -> configurable goal preset -> confirmation.
+- GUI Contract accept, deny, cancel and abandon actions with configurable confirmations.
+- Full Diplomacy GUI with Party list, Trust Score, relation state, incoming/outgoing Alliance request indicators and detail actions.
+- GUI Alliance request/accept/deny, Rival declaration and Neutral reset with confirmation protection.
+- Recruitment GUI for switching between OPEN, APPLICATION and CLOSED modes.
+- Incoming Applications inbox with applicant note, expiry, detail screen and accept/deny confirmations.
+- Outgoing My Applications screen for players without a Party, including cancellation flow.
+- Rank Capabilities GUI showing the current role's interaction capabilities.
+- Pagination across Party Browser, Contracts, Diplomacy and Applications.
+- New granular Bukkit permissions for Interaction GUI sections and management actions.
+- `gui.interaction.enabled`, progress-bar width, Contract goal presets and per-action confirmation toggles.
+- v1.3.1 config migration merges Interaction GUI defaults without resetting Party or interaction data.
+
+### Changed
+
+- Zero-argument direct Interaction commands now open the corresponding inventory GUI; commands with arguments retain v1.3.0 behavior.
+- Zero-argument nested `/party interaction`, `/party contract`, `/party diplomacy`, `/party browse`, `/party apply`, `/party applications`, `/party recruitment` and `/party rankperms` open GUI screens.
+- The main `/party` menu gains a Party Interaction button for Party members and Party Browser for players without a Party.
+- All GUI mutations delegate to `InteractionManager`, preserving v1.3.0 validation, cooldowns, Party War membership locks, slot limits and rank capabilities.
+
+### Compatibility
+
+- Existing v1.3.0 `interactions.yml` is used directly with no conversion.
+- Existing Party/progression/war/season data remains valid.
+- No new required dependency or database is added.
+
 ## 1.3.0 - 2026-09-10
 
 Party Interaction Update.

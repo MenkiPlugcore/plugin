@@ -96,18 +96,36 @@ modules:
   diplomacy: true
   applications: true
 
-# v1.2.2 - Progression GUI safety & usability.
-# Command tetap berfungsi jika GUI dimatikan.
+# Optional inventory interfaces. Commands tetap berfungsi jika GUI dimatikan.
 gui:
   progression:
     enabled: true
     # Panjang visual progress bar di lore GUI. Range efektif 5-40.
     progress-bar-width: 20
     confirmations:
-      # Mencegah cancel Project karena salah klik.
       project-cancel: true
-      # Mencegah Skill Point terpakai karena salah klik.
       skill-unlock: true
+
+  # v1.3.1 - GUI untuk Contracts, Diplomacy, Recruitment dan Applications.
+  interaction:
+    enabled: true
+    progress-bar-width: 20
+    # Preset goal saat membuat Contract melalui GUI. Tetap di-clamp ke min/max Contract.
+    contract-goals:
+      - 50
+      - 100
+      - 250
+      - 500
+      - 1000
+    confirmations:
+      contract-create: true
+      contract-response: true
+      contract-cancel: true
+      contract-abandon: true
+      diplomacy-change: true
+      application-submit: true
+      application-decisions: true
+      application-cancel: true
 
 progression:
   projects:
@@ -209,7 +227,7 @@ progression:
       BALANCED: 'Balanced'
 
 # ---------------------------------------------------------------------------
-# v1.3.0 - Party Interaction Update
+# v1.3.x - Party Interaction
 # Data runtime disimpan terpisah di interactions.yml.
 # ---------------------------------------------------------------------------
 interaction:
