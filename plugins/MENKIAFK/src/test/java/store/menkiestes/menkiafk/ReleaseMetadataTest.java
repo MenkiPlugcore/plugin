@@ -11,21 +11,22 @@ import static org.junit.jupiter.api.Assertions.*;
 class ReleaseMetadataTest {
 
     @Test
-    void pluginMetadataMatchesProductionCandidate() throws IOException {
+    void pluginMetadataMatchesProductionStable() throws IOException {
         String pluginYml = resource("plugin.yml");
 
         assertTrue(pluginYml.contains("name: MENKIAFK"));
-        assertTrue(pluginYml.contains("version: '1.5.1'"));
+        assertTrue(pluginYml.contains("version: '1.6.0'"));
         assertTrue(pluginYml.contains("api-version: '1.21.11'"));
         assertTrue(pluginYml.contains("main: store.menkiestes.menkiafk.MenkiAfkPlugin"));
         assertTrue(pluginYml.contains("softdepend: [PlaceholderAPI, Essentials]"));
+        assertFalse(pluginYml.toLowerCase().contains("production-candidate"));
     }
 
     @Test
-    void defaultConfigIsStillUniversalAndCandidateVersioned() throws IOException {
+    void defaultConfigIsStillUniversalAndStableVersioned() throws IOException {
         String config = resource("config.yml");
 
-        assertTrue(config.contains("MENKIAFK v1.5.1 Universal"));
+        assertTrue(config.contains("MENKIAFK v1.6.0 Universal"));
         assertTrue(config.contains("timezone: \"system\""));
         assertTrue(config.contains("minimum-session-seconds: 10"));
         assertFalse(config.contains("mysql:"));
