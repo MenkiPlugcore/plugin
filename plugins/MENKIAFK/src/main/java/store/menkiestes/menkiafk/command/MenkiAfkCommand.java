@@ -40,6 +40,7 @@ public final class MenkiAfkCommand implements CommandExecutor, TabCompleter {
                     + " &8| &7AFK: &f" + manager.afkCount()
                     + " &8| &7Online tracked: &f" + manager.trackedPlayers()
                     + " &8| &7Stats profiles: &f" + statsManager.trackedPlayerCount()
+                    + " &8| &7Stats I/O: " + (statsManager.isPersistenceHealthy() ? "&aOK" : "&cBLOCKED")
                     + " &8| &7PAPI: &f" + (plugin.isPlaceholderApiHooked() ? "ON" : "OFF")
                     + " &8| &7Java: &f" + System.getProperty("java.specification.version", "?")));
             return true;

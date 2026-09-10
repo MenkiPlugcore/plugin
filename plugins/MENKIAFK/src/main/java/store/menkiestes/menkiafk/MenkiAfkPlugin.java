@@ -56,7 +56,9 @@ public final class MenkiAfkPlugin extends JavaPlugin {
         if (statsSaveTask != null) statsSaveTask.cancel();
         if (afkManager != null) afkManager.shutdown();
         if (statsManager != null) statsManager.saveNow();
-        getLogger().info("MENKIAFK dinonaktifkan. Statistik AFK telah disimpan.");
+        getLogger().info(statsManager != null && !statsManager.isPersistenceHealthy()
+                ? "MENKIAFK dinonaktifkan. Penulisan statistik sebelumnya diblokir untuk melindungi stats.yml yang bermasalah."
+                : "MENKIAFK dinonaktifkan. Statistik AFK telah disimpan.");
     }
 
     private void registerCommands() {
@@ -121,6 +123,8 @@ public final class MenkiAfkPlugin extends JavaPlugin {
     }
 
     public void reloadPluginConfig() {
+        // Preserve the current checkpoint before timezone/retention/autosave settings are changed.
+        statsManager.saveIfNeeded();
         reloadConfig();
         statsManager.reloadSettings();
         restartAutoAfkTask();
