@@ -1,4 +1,4 @@
-# MENKIAFK v1.4.1 Universal
+# MENKIAFK v1.5.0 Universal
 
 Standalone native AFK plugin by MENKIESTES. MENKIAFK does not require a specific server setup, economy plugin, AFK world, crate plugin, or external database.
 
@@ -40,6 +40,37 @@ The plugin intentionally compiles against the lowest target API, Paper 1.21.11, 
 - autosave checkpoints for active valid sessions
 - admin reset with `/menkiafk resetstats <player>`
 - PlaceholderAPI placeholders when PlaceholderAPI is installed
+- read-only public API for other Bukkit/Paper plugins
+- `PlayerEnterAfkEvent` and `PlayerLeaveAfkEvent` integration events
+
+## v1.5.0 Public API
+
+MENKIAFK registers `store.menkiestes.menkiafk.api.MenkiAfkAPI` through Bukkit's `ServicesManager`. The public API is intentionally read-only so external plugins cannot mutate MENKIAFK's lifecycle or persistence state.
+
+Quick lookup:
+
+```java
+import store.menkiestes.menkiafk.api.MenkiAfkAPI;
+
+MenkiAfkAPI afkApi = MenkiAfkAPI.get();
+boolean afk = afkApi.isAfk(player.getUniqueId());
+long total = afkApi.getTotalAfkTime(player.getUniqueId());
+```
+
+Available immutable models:
+
+- `AfkSessionSnapshot`
+- `AfkStatisticsSnapshot`
+- `AfkSessionType`
+
+Available events:
+
+- `PlayerEnterAfkEvent` - fired after AFK state is committed
+- `PlayerLeaveAfkEvent` - fired after AFK state is removed during normal runtime, including quit/kick cleanup
+
+Events are informational and non-cancellable. Leave events are not emitted during plugin/server disable so shutdown only performs persistence finalization and runtime cleanup.
+
+See [`API.md`](API.md) for dependency setup, ServicesManager lookup, query examples, event examples, and the public compatibility contract.
 
 ## v1.4.1 Stability Patch
 
@@ -52,13 +83,13 @@ Stability hardening:
 - `stats.yml` saves are written to `stats.yml.tmp` first and then replaced atomically when the filesystem supports it
 - unreadable YAML is quarantined as `stats-corrupt-<timestamp>.yml` instead of being silently overwritten
 - if the corrupt file cannot be quarantined, statistic writes are blocked for that server session to protect the original file
-- if `stats.yml` uses a schema newer than v1.4.1 understands, known data is read best-effort but writes are blocked so downgrading cannot overwrite a newer format
+- if `stats.yml` uses a schema newer than MENKIAFK understands, known data is read best-effort but writes are blocked so downgrading cannot overwrite a newer format
 - inconsistent Manual/Auto counters and longest-session values are normalized safely on load
 - `/menkiafk status` includes `Stats I/O: OK/BLOCKED`; failed writes show as unhealthy until a later write succeeds
 - `/menkiafk reload` checkpoints statistics before applying new statistics configuration
 - shutdown logs distinguish a successful save from a deliberately blocked persistence state
 
-The persistent schema remains version 3. Existing v1.2.0, v1.3.0, and v1.4.0 data remains readable.
+The persistent schema remains version 3. Existing v1.2.0, v1.3.0, v1.4.0, and v1.4.1 data remains readable.
 
 ## v1.4.0 Utility & Configuration
 
@@ -154,19 +185,19 @@ mvn clean package
 Output:
 
 ```text
-MENKIAFK-1.4.1-Universal.jar
+MENKIAFK-1.5.0-Universal.jar
 ```
 
 ## Installation / upgrade
 
 1. Stop the server.
-2. Put `MENKIAFK-1.4.1-Universal.jar` in `plugins/`.
+2. Put `MENKIAFK-1.5.0-Universal.jar` in `plugins/`.
 3. Remove/rename older MENKIAFK JARs so only one version loads.
 4. Start the server.
 5. Optional: install PlaceholderAPI for `%menkiafk_*%` placeholders.
 
-Existing v1.2.0/v1.3.0/v1.4.0 config and `stats.yml` data remain compatible. v1.4.1 adds no new required configuration key.
+Existing v1.2.0-v1.4.1 config and `stats.yml` data remain compatible. v1.5.0 adds no required configuration key and keeps `stats.yml` schema version 3.
 
 ## Performance design
 
-MENKIAFK v1.4.1 adds no new repeating task. AFK sessions, last-activity timestamps and cooldowns remain runtime memory only. Movement/rotation uses throttled timestamp updates; auto-AFK is checked periodically by the existing task. Persistent statistics are updated on AFK lifecycle transitions, autosave uses the existing stats task, and the stability hardening only changes lifecycle guards and the way YAML is safely replaced on disk.
+MENKIAFK v1.5.0 adds no new repeating task. API queries read existing in-memory AFK state and synchronized statistics snapshots; lifecycle events are only created when AFK state actually changes. No polling, packet interception, NMS, external database, or network I/O is introduced by the public API.
