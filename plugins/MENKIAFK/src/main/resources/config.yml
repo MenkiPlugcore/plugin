@@ -1,5 +1,5 @@
 # ==========================================================
-# MENKIAFK v1.2.0 Universal - MENKIESTES
+# MENKIAFK v1.3.0 Universal - MENKIESTES
 # Paper 1.21.11 -> 26.2 | Spigot 1.21.11 | bytecode Java 21
 # ==========================================================
 
@@ -51,9 +51,17 @@ private-message:
   remember-while-afk: true
   max-remembered: 10
 
+# /afklist hanya membaca player online saat command dipanggil.
+# Batas ini mencegah chat spam di server besar.
+afk-list:
+  max-entries: 20
+
 # Statistik bersifat standalone. Tidak membutuhkan Vault, database eksternal,
 # world khusus, crate plugin, atau plugin server lain.
 stats:
+  # Session lebih pendek dari nilai ini tidak masuk statistik/leaderboard.
+  # Berguna untuk mencegah spam /afk mengotori statistik. 0 = semua session dihitung.
+  minimum-session-seconds: 10
   # Checkpoint stats.yml. Session aktif ikut dicatat ke checkpoint agar kehilangan data
   # saat crash dibatasi hingga interval autosave terakhir.
   autosave-seconds: 300
@@ -86,6 +94,7 @@ messages:
   inbox-header: "{@prefix} &eAda &f%count% &epesan yang dikirim saat kamu AFK:"
   inbox-line: "&8» &f%sender%&8: &7%message%"
   reload: "{@prefix} &aKonfigurasi berhasil dimuat ulang."
+
   status-header: "&8&m--------------------------------"
   status-title: "&6&lMENKI AFK STATUS"
   status-player: "&7Player: &f%player%"
@@ -94,6 +103,12 @@ messages:
   status-reason: "&7Alasan: &f%reason%"
   status-duration: "&7Durasi: &f%duration%"
 
+  afk-list-header: "&8&m--------------------------------"
+  afk-list-title: "&6&lAFK ONLINE &8— &7%count% player"
+  afk-list-line: "&6• &f%player% &8— &e%duration% &8[&7%type%&8] &8— &7%reason%"
+  afk-list-empty: "&7Tidak ada player yang sedang AFK."
+  afk-list-more: "&8... &7dan &f%count% &7player AFK lainnya."
+
   stats-header: "&8&m--------------------------------"
   stats-title: "&6&lAFK STATISTICS"
   stats-player: "&7Player: &f%player%"
@@ -101,6 +116,9 @@ messages:
   stats-week: "&7Minggu ini: &e%time%"
   stats-total: "&7Total AFK: &6%time%"
   stats-sessions: "&7Jumlah sesi: &f%sessions%"
+  stats-types: "&7Manual: &f%manual% &8| &7Otomatis: &f%auto%"
+  # Hanya muncul jika ada session dari v1.2.0 yang belum memiliki klasifikasi Manual/Auto.
+  stats-legacy: "&7Legacy v1.2: &f%sessions% &7sesi"
   stats-longest: "&7Sesi terlama: &f%time%"
   stats-reset: "{@prefix} &aStatistik AFK &f%player% &atelah direset."
 
