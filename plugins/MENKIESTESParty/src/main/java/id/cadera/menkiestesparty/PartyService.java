@@ -154,9 +154,17 @@ public final class PartyService {
         db.parties.set("players." + uuid, null);
     }
 
+    private boolean rosterFrozen(String party, Player actor) {
+        AdministrationManager admin = plugin.administration();
+        if (admin == null || !admin.blocksRoster(party)) return false;
+        actor.sendMessage(prefix + Util.color(" &cParty sedang dibekukan oleh staff. &7Reason: &f" + admin.freezeReason(party)));
+        return true;
+    }
+
     public void invite(Player inviter, Player target) {
         String party = partyOf(inviter.getUniqueId());
         if (party == null) { inviter.sendMessage(prefix + Util.color(" &cKamu belum punya Party.")); return; }
+        if (rosterFrozen(party, inviter)) return;
         if (!canManage(inviter.getUniqueId())) { inviter.sendMessage(prefix + Util.color(" &cHanya Owner/Officer yang dapat invite.")); return; }
         if (inParty(target.getUniqueId())) { inviter.sendMessage(prefix + Util.color(" &cPlayer tersebut sudah memiliki Party.")); return; }
         if (memberCount(party) >= memberLimit(party)) { inviter.sendMessage(prefix + Util.color(" &cSlot Party penuh.")); return; }
@@ -171,6 +179,7 @@ public final class PartyService {
         if (inv == null || inv.expiresAt() < System.currentTimeMillis()) {
             player.sendMessage(prefix + Util.color(" &cTidak ada undangan Party aktif.")); return;
         }
+        if (rosterFrozen(inv.partyKey(), player)) return;
         if (inParty(player.getUniqueId())) { player.sendMessage(prefix + Util.color(" &cKamu sudah memiliki Party.")); return; }
         if (!exists(inv.partyKey()) || memberCount(inv.partyKey()) >= memberLimit(inv.partyKey())) {
             player.sendMessage(prefix + Util.color(" &cUndangan sudah tidak valid atau Party penuh.")); return;
@@ -183,6 +192,7 @@ public final class PartyService {
     public void leave(Player player) {
         String party = partyOf(player.getUniqueId());
         if (party == null) { player.sendMessage(prefix + Util.color(" &cKamu belum punya Party.")); return; }
+        if (rosterFrozen(party, player)) return;
         if (plugin.war().membershipLocked()) { player.sendMessage(prefix + Util.color(" &cMembership dikunci selama Party War aktif/prepare.")); return; }
         if (player.getUniqueId().equals(owner(party))) {
             player.sendMessage(prefix + Util.color(" &cOwner tidak bisa leave. Gunakan /party disband.")); return;
@@ -198,16 +208,19 @@ public final class PartyService {
         if (party == null || !player.getUniqueId().equals(owner(party))) {
             player.sendMessage(prefix + Util.color(" &cHanya Owner dapat membubarkan Party.")); return;
         }
+        if (rosterFrozen(party, player)) return;
         if (plugin.war().membershipLocked()) { player.sendMessage(prefix + Util.color(" &cTidak dapat disband selama Party War.")); return; }
+        String display = display(party);
         for (UUID uuid : members(party)) db.parties.set("players." + uuid, null);
         db.parties.set("parties." + party, null);
         plugin.saveDataSoon();
-        Bukkit.broadcastMessage(prefix + Util.color(" &cParty &f" + display(party) + " &ctelah dibubarkan."));
+        Bukkit.broadcastMessage(prefix + Util.color(" &cParty &f" + display + " &ctelah dibubarkan."));
     }
 
     public void kick(Player actor, OfflinePlayer target) {
         String party = partyOf(actor.getUniqueId());
         if (party == null || !canManage(actor.getUniqueId())) { actor.sendMessage(prefix + Util.color(" &cTidak punya akses.")); return; }
+        if (rosterFrozen(party, actor)) return;
         if (plugin.war().membershipLocked()) { actor.sendMessage(prefix + Util.color(" &cMembership dikunci selama Party War.")); return; }
         UUID tuid = target.getUniqueId();
         if (!party.equals(partyOf(tuid))) { actor.sendMessage(prefix + Util.color(" &cTarget bukan member Party-mu.")); return; }
@@ -226,6 +239,7 @@ public final class PartyService {
         if (party == null || !actor.getUniqueId().equals(owner(party))) {
             actor.sendMessage(prefix + Util.color(" &cHanya Owner yang dapat mengubah role.")); return;
         }
+        if (rosterFrozen(party, actor)) return;
         UUID id = target.getUniqueId();
         if (!party.equals(partyOf(id)) || id.equals(owner(party))) {
             actor.sendMessage(prefix + Util.color(" &cTarget tidak valid.")); return;
