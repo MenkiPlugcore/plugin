@@ -1,5 +1,5 @@
 # ==========================================================
-# MENKIAFK v1.1.0 Universal - MENKIESTES
+# MENKIAFK v1.2.0 Universal - MENKIESTES
 # Paper 1.21.11 -> 26.2 | Spigot 1.21.11 | bytecode Java 21
 # ==========================================================
 
@@ -51,6 +51,19 @@ private-message:
   remember-while-afk: true
   max-remembered: 10
 
+# Statistik bersifat standalone. Tidak membutuhkan Vault, database eksternal,
+# world khusus, crate plugin, atau plugin server lain.
+stats:
+  # Checkpoint stats.yml. Session aktif ikut dicatat ke checkpoint agar kehilangan data
+  # saat crash dibatasi hingga interval autosave terakhir.
+  autosave-seconds: 300
+  # Jumlah baris per halaman /afktop. Nilai efektif dibatasi 3-20.
+  leaderboard-page-size: 10
+  # Data harian disimpan untuk statistik hari/minggu. Minimum efektif 14 hari.
+  keep-daily-days: 35
+  # "system" mengikuti timezone OS/server. Bisa diganti contoh: Asia/Jakarta.
+  timezone: "system"
+
 placeholder:
   active-text: "Aktif"
   afk-text: "AFK"
@@ -67,7 +80,7 @@ messages:
   auto-afk-broadcast: "{@prefix} &e%player% &7otomatis &6AFK &8— &7%reason%"
   return-broadcast: "{@prefix} &f%player% &atelah kembali &8(&7AFK %duration%&8)"
   not-afk: "{@prefix} &f%player% &7sedang tidak AFK."
-  player-not-found: "{@prefix} &cPlayer &f%player% &ctidak ditemukan."
+  player-not-found: "{@prefix} &cPlayer &f%player% &ctidak ditemukan di data MENKIAFK."
   mention-warning: "&6⚠ &f%player% &esedang AFK &8— &7%reason% &8(&f%duration%&8)"
   pm-warning: "&6⚠ &f%player% &esedang AFK &8— &7%reason% &8(&f%duration%&8). &7Pesan tetap dikirim."
   inbox-header: "{@prefix} &eAda &f%count% &epesan yang dikirim saat kamu AFK:"
@@ -80,3 +93,21 @@ messages:
   status-type: "&7Tipe: &f%type%"
   status-reason: "&7Alasan: &f%reason%"
   status-duration: "&7Durasi: &f%duration%"
+
+  stats-header: "&8&m--------------------------------"
+  stats-title: "&6&lAFK STATISTICS"
+  stats-player: "&7Player: &f%player%"
+  stats-today: "&7Hari ini: &e%time%"
+  stats-week: "&7Minggu ini: &e%time%"
+  stats-total: "&7Total AFK: &6%time%"
+  stats-sessions: "&7Jumlah sesi: &f%sessions%"
+  stats-longest: "&7Sesi terlama: &f%time%"
+  stats-reset: "{@prefix} &aStatistik AFK &f%player% &atelah direset."
+
+  leaderboard-header: "&8&m--------------------------------"
+  leaderboard-title: "&6&lAFK TOP &8— &f%metric% &7[%page%/%pages%]"
+  leaderboard-line: "&6#%rank% &f%player% &8— &e%value%"
+  leaderboard-empty: "&7Belum ada statistik AFK untuk ditampilkan."
+  leaderboard-invalid-metric: "{@prefix} &cKategori tidak valid. &7Gunakan: &ftotal, today, week, longest, sessions"
+  leaderboard-invalid-page: "{@prefix} &cHalaman harus berupa angka lebih dari 0."
+  leaderboard-page-out-of-range: "{@prefix} &cHalaman tidak tersedia. &7Total halaman: &f%pages%"
