@@ -6,15 +6,17 @@
 
     <groupId>store.menkiestes</groupId>
     <artifactId>menkiafk</artifactId>
-    <version>1.5.0</version>
+    <version>1.5.1</version>
     <name>MENKIAFK</name>
-    <description>Universal lightweight standalone AFK system with persistent stats, leaderboards, utility configuration, stability hardening, and a public read-only API (Paper 1.21.11-26.2).</description>
+    <description>Universal lightweight standalone AFK system with persistent stats, leaderboards, utility configuration, stability hardening, a public read-only API, and production-candidate quality gates (Paper 1.21.11-26.2).</description>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>
         <placeholderapi.version>2.12.0</placeholderapi.version>
+        <junit.version>5.11.4</junit.version>
+        <menkiafk.release.channel>candidate</menkiafk.release.channel>
     </properties>
 
     <repositories>
@@ -41,6 +43,12 @@
             <version>${placeholderapi.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -53,6 +61,14 @@
                 <configuration>
                     <release>21</release>
                     <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
                 </configuration>
             </plugin>
             <plugin>
