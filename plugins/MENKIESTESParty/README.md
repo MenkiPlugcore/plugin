@@ -1,173 +1,170 @@
-# MENKIESTESParty v1.2.2
+# MENKIESTESParty v1.3.0
 
-Native Paper Party/Guild framework by CADERA. Designed for Paper 1.21.11 / Java 21 with local YAML storage and no required database.
+Native modular Paper Party/Guild framework by CADERA. Designed for Paper 1.21.11 / Java 21, local YAML storage, and no required database.
 
-## v1.2.2 — GUI & Safety Polish
+## v1.3.0 — Party Interaction Update
 
-v1.2.2 improves the v1.2 progression interface for public/server-wide use without changing existing Party data.
+v1.3.0 adds interaction between Parties without tying the plugin to a specific server network, economy plugin, or database.
 
-### Pagination
+New systems:
 
-Progression menus now support large custom configurations instead of showing only the first inventory page:
+- Party Contracts
+- Diplomacy + Trust Score
+- Recruitment + Join Applications
+- Configurable rank capabilities for interaction actions
+- Dedicated `interactions.yml` storage
+- New PlaceholderAPI values
 
-- Party Projects
-- Party Skill Tree nodes
-- Party Divisions
-- Division member manager
-- Division assignment menu
+All v1.3 modules are optional.
 
-Project, Skill and Division definitions can therefore grow beyond one GUI page while remaining configurable through `config.yml`.
+## Party Contracts
 
-### Confirmation screens
+One Party can offer an objective to another Party. Built-in objective types:
 
-Risky GUI actions now have optional confirmation:
+- `mining`
+- `hunter`
+- `farmer`
 
-- Cancel active Party Project
-- Unlock Party Skill / spend Skill Point
+Flow:
 
-```yaml
-gui:
-  progression:
-    confirmations:
-      project-cancel: true
-      skill-unlock: true
+1. Issuer creates a Contract.
+2. Target Party receives a PENDING proposal.
+3. A permitted rank accepts or denies it.
+4. After acceptance, activity from the target Party advances the Contract.
+5. Completion updates Contract statistics and Trust Score.
+
+Commands:
+
+```text
+/party contract
+/party contract info <id>
+/party contract create <party> <mining|hunter|farmer> <goal>
+/party contract accept <id>
+/party contract deny <id>
+/party contract cancel <id>
+/party contract abandon <id>
 ```
 
-Commands are unchanged; these confirmations only protect inventory clicks.
+Direct alias: `/partycontract` or `/pcontract`.
 
-### Visual progression
+Contract protection includes configurable goal limits, proposal expiry, active deadline, per-pair cooldown, active/open limits, placed-block anti-abuse for mining, and automatic history cleanup.
 
-The GUI now shows progress bars for:
+### Contract rewards
 
-- Party Level progress
-- Active Party Project progress
-- Dynamic Identity activity share
+Automatic Contract Party XP is intentionally `0` by default. This prevents two Parties or alt Parties from repeatedly creating Contracts just to generate free XP.
 
-Progress-bar width is configurable:
+Server owners can enable it:
 
 ```yaml
-gui:
-  progression:
-    progress-bar-width: 20
+interaction:
+  contracts:
+    party-xp-reward: 0
 ```
 
-Effective range is 5-40 characters.
+By default Contract completion primarily affects Diplomacy Trust.
 
-Party Profile's Level item is now clickable and opens a Level Progression screen showing Level 1-5 requirements and member-slot limits.
+## Diplomacy + Trust
 
-### Granular GUI permissions
+Relationships are symmetric between two Parties.
 
-Role rules remain authoritative. Permissions are an additional layer that server owners can control with a permission plugin such as LuckPerms.
+Relations:
 
-- `menkiestesparty.gui.progression` — open Progression Hub
-- `menkiestesparty.gui.projects` — view Projects GUI
-- `menkiestesparty.gui.projects.manage` — start/cancel Projects from GUI; Owner/Officer rule still applies
-- `menkiestesparty.gui.skills` — view Skill Tree GUI
-- `menkiestesparty.gui.skills.unlock` — unlock Skills from GUI; Owner rule still applies
-- `menkiestesparty.gui.divisions` — view Divisions GUI
-- `menkiestesparty.gui.divisions.self` — self-select Division when enabled in config
-- `menkiestesparty.gui.divisions.manage` — assign member Divisions; Owner/Officer rule still applies
-- `menkiestesparty.gui.identity` — view Dynamic Identity GUI
+- `NEUTRAL`
+- `ALLY`
+- `RIVAL`
 
-These permissions default to `true` for backwards compatibility and can be explicitly denied per player/group. `menkiestesparty.admin` bypasses progression GUI permission checks.
+Trust Score ranges from `-100` to `100` and is stored separately from the relation label. Completing Contracts can increase Trust; abandoning or failing them can reduce it.
 
-## Progression Hub
+Commands:
 
-Open `/party` and use **Party Progression** to access:
+```text
+/party diplomacy
+/party diplomacy status <party>
+/party diplomacy request <party> ally
+/party diplomacy accept <party>
+/party diplomacy deny <party>
+/party diplomacy neutral <party>
+/party diplomacy rival <party>
+```
 
-- Party Profile
-- Party Projects
-- Party Skill Tree
-- Party Divisions
-- Dynamic Party Identity
+Alliance requires agreement. If both Parties send an Alliance request to each other, the second request completes the Alliance immediately. Neutral and Rival changes are direct actions.
 
-The GUI remains optional:
+Direct alias: `/partydiplomacy`, `/pdiplomacy`, `/pdiplo`.
+
+## Recruitment + Join Applications
+
+Each Party has a recruitment mode:
+
+- `OPEN` — `/party apply <party>` joins immediately when a slot is available.
+- `APPLICATION` — creates an application that Owner/authorized ranks can review.
+- `CLOSED` — rejects new applications.
+
+Commands:
+
+```text
+/party browse [page]
+/party apply <party> [message]
+/party apply cancel <party>
+/party recruitment <open|application|closed>
+/party applications
+/party applications accept <player>
+/party applications deny <player>
+```
+
+Direct aliases:
+
+```text
+/partybrowse
+/partyapply
+/partyrecruitment
+/partyapplications
+```
+
+Applications expire automatically and a player can only have a configurable number of active applications. Accepting an application removes the player's other stale applications.
+
+Party War membership locks and Party member limits are respected by OPEN recruitment and application acceptance.
+
+## Configurable rank capabilities
+
+v1.3 adds server-configurable capabilities for interaction management. Owner always has all interaction capabilities as a lockout safeguard. Officer and Member capabilities are configurable.
+
+Default:
 
 ```yaml
-gui:
-  progression:
-    enabled: true
+rank-permissions:
+  enabled: true
+  officer:
+    - contracts.create
+    - contracts.respond
+    - diplomacy.manage
+    - recruitment.manage
+    - applications.manage
+  member: []
 ```
 
-If disabled, all progression commands continue working normally.
+Wildcards are supported:
 
-## Party Projects
+```yaml
+rank-permissions:
+  officer:
+    - 'contracts.*'
+    - diplomacy.manage
+```
 
-One shared long-term objective can be active per Party. Default projects:
+Use `/party rankperms` or `/partyrankperms` to see the current role's interaction capabilities.
 
-| ID | Type | Goal | Party XP |
-| --- | --- | ---: | ---: |
-| `mining_expedition` | Mining | 2500 | 300 |
-| `monster_hunt` | Hunter | 500 | 350 |
-| `harvest_drive` | Farmer | 1500 | 250 |
+This capability layer applies to v1.3 interaction actions. Existing core ownership safety such as Owner-only disband and Owner-only role changes remains unchanged.
 
-Owner/Officer can start or cancel projects. Member contributions are shared and saved in `parties.yml`.
+## Interaction overview
 
-Commands:
+```text
+/party interaction
+/partyinteraction
+```
 
-- `/party project`
-- `/party project start <id>`
-- `/party project cancel`
-- `/partyproject` / `/pproject`
-
-## Party Skill Tree
-
-Party Level automatically provides Skill Points: 1 point for every level after Level 1 by default. Only the Owner spends Party Skill Points.
-
-Default branches:
-
-- COMBAT — improves Hunter Project progress.
-- LABOR — improves Mining/Farming Project progress.
-- COMMAND — improves Party XP rewarded by completed Projects.
-
-Commands:
-
-- `/party skill`
-- `/party skill unlock <node>`
-- `/partyskill` / `/pskill`
-
-## Party Divisions
-
-Divisions do not replace Owner/Officer/Member roles. They are an additional specialization layer.
-
-Default divisions:
-
-- Combat Division — Hunter Project contribution bonus.
-- Resource Division — Mining/Farming Project contribution bonus.
-- Support Division — small bonus to all Project contribution.
-
-Commands:
-
-- `/party division`
-- `/party division join <id|none>`
-- `/party division set <player> <id|none>` — Owner/Officer
-- `/partydivision` / `/pdivision`
-
-## Dynamic Party Identity
-
-Identity is not selected manually. It is calculated from the Party's recent activity using a rolling 30-day window by default.
-
-Available identities:
-
-- Developing
-- Warlike
-- Industrial
-- Agrarian
-- Project Focused
-- Balanced
-
-Commands:
-
-- `/party identity`
-- `/partyidentity` / `/pidentity`
-
-## Party Profile
-
-`/party profile` or `/partyprofile` shows Party Level, XP, member count, Identity, Skill Points, member Division, and active Project. The same information is available from the Progression GUI.
+Shows active Contracts, completed Contract count, recruitment mode, pending applications, and quick command references.
 
 ## Modular configuration
-
-Each progression feature can be disabled independently:
 
 ```yaml
 modules:
@@ -175,23 +172,68 @@ modules:
   skill-tree: true
   divisions: true
   identity: true
+  contracts: true
+  diplomacy: true
+  applications: true
 ```
 
-Core Party, Weekly Quest, Daily Mission, Party Relic, Party War and Season remain compatible with earlier v1.2 data.
+Disabling an interaction module does not disable the core Party system.
+
+## Storage
+
+v1.3 adds:
+
+```text
+plugins/MENKIESTESParty/interactions.yml
+```
+
+It contains Contract state/history, Diplomacy relations, Trust Score, Alliance requests, application queues, and interaction statistics.
+
+Existing data files remain unchanged:
+
+```text
+parties.yml
+wars.yml
+season.yml
+hall.yml
+```
+
+No database migration is required.
+
+## Progression systems from v1.2.x
+
+MENKIESTESParty still includes:
+
+- Party Projects
+- Party Skill Tree
+- Party Divisions
+- Dynamic Party Identity
+- Progression GUI with pagination, confirmations and visual progress bars
+- Weekly Quest
+- Daily Party Mission
+- Party Relic
+- Party War
+- Party Season
 
 ## PlaceholderAPI
 
-Existing `%mparty_*%` placeholders remain. Progression placeholders include:
+Existing `%mparty_*%` placeholders remain. v1.3 adds:
 
-- `%mparty_identity%`
-- `%mparty_division%`
-- `%mparty_skill_points%`
-- `%mparty_project%`
-- `%mparty_project_progress%`
+```text
+%mparty_recruitment%
+%mparty_contracts_active%
+%mparty_contracts_completed%
+%mparty_applications_pending%
+```
 
-## Upgrade from v1.2.1
+## Upgrade from v1.2.2
 
-Replace the JAR and restart the server. Do not delete `plugins/MENKIESTESParty/`. Existing `parties.yml`, `wars.yml`, and `season.yml` remain valid. Missing v1.2.2 GUI defaults are merged into the existing `config.yml` on first startup.
+1. Stop the server.
+2. Replace the old MENKIESTESParty JAR.
+3. Do **not** delete `plugins/MENKIESTESParty/`.
+4. Start the server normally.
+
+The v1.3 config migration merges missing defaults without resetting existing Party data. `interactions.yml` is created automatically.
 
 ## Requirements
 
@@ -201,6 +243,7 @@ Replace the JAR and restart the server. Do not delete `plugins/MENKIESTESParty/`
 - GriefPrevention optional
 - No Skript required
 - No database required
+- No Vault required
 
 ## License
 

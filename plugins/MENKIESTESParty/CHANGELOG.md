@@ -1,5 +1,43 @@
 # Changelog
 
+## 1.3.0 - 2026-09-10
+
+Party Interaction Update.
+
+### Added
+
+- Party Contracts between Parties with built-in `mining`, `hunter`, and `farmer` objective types.
+- Contract proposal/accept/deny/cancel/abandon lifecycle.
+- Contract proposal expiry, active deadline, per-pair cooldown, open/active limits, history retention and placed-block anti-abuse.
+- In-memory active Contract index so normal gameplay events do not scan all Contract history.
+- Diplomacy relations: `NEUTRAL`, `ALLY`, and `RIVAL`.
+- Symmetric Trust Score from `-100` to `100`.
+- Mutual Alliance request flow with automatic completion when both Parties request each other.
+- Contract completion/failure Trust integration.
+- Recruitment modes: `OPEN`, `APPLICATION`, and `CLOSED`.
+- Party Browser and Join Applications with optional applicant note.
+- Application expiry, per-player application limit, accept/deny/cancel flow and automatic stale-application cleanup.
+- Configurable interaction capability lists for Officer and Member roles with wildcard support.
+- `/party interaction`, `/party contract`, `/party diplomacy`, `/party browse`, `/party apply`, `/party applications`, `/party recruitment`, `/party rankperms`.
+- Direct aliases: `/partyinteraction`, `/partycontract`, `/partydiplomacy`, `/partybrowse`, `/partyapply`, `/partyapplications`, `/partyrecruitment`, `/partyrankperms`.
+- Dedicated `interactions.yml` storage.
+- PlaceholderAPI: `%mparty_recruitment%`, `%mparty_contracts_active%`, `%mparty_contracts_completed%`, `%mparty_applications_pending%`.
+- v1.3 config migration that merges Interaction defaults without resetting existing Party data.
+
+### Safety / Public Plugin Defaults
+
+- Automatic Contract Party XP defaults to `0` to avoid alt-Party XP farming.
+- Party limits and Party War membership locks are respected by OPEN recruitment and application acceptance.
+- Contract mining ignores blocks placed after startup using a bounded in-memory anti-abuse set.
+- Owner always keeps all v1.3 interaction capabilities to prevent configuration lockout.
+- No Vault, database, proxy network, or server-specific dependency is required.
+
+### Compatibility
+
+- Existing v1.2.2 `parties.yml`, `wars.yml`, `season.yml`, and progression data remain valid.
+- New cross-Party state is isolated in `interactions.yml`.
+- No database migration is required.
+
 ## 1.2.2 - 2026-09-10
 
 GUI & Safety Polish.

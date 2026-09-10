@@ -1,9 +1,9 @@
 name: MENKIESTESParty
-version: 1.2.2
+version: 1.3.0
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
-description: Modular Paper Party system with missions, projects, skill tree, divisions, dynamic identity, progression GUI and Party War.
+description: Modular Paper Party/Guild framework with progression, contracts, diplomacy, recruitment, applications and Party War.
 softdepend: [PlaceholderAPI, GriefPrevention]
 commands:
   party:
@@ -44,6 +44,38 @@ commands:
     aliases: [pprofile]
     description: Party progression profile
     usage: /partyprofile
+  partyinteraction:
+    aliases: [pinteraction]
+    description: Party Interaction overview
+    usage: /partyinteraction
+  partycontract:
+    aliases: [pcontract]
+    description: Party Contracts
+    usage: /partycontract
+  partydiplomacy:
+    aliases: [pdiplomacy, pdiplo]
+    description: Party Diplomacy and Trust
+    usage: /partydiplomacy
+  partybrowse:
+    aliases: [pbrowse]
+    description: Browse recruiting Parties
+    usage: /partybrowse [page]
+  partyapply:
+    aliases: [papply]
+    description: Apply or join a recruiting Party
+    usage: /partyapply <party> [message]
+  partyapplications:
+    aliases: [papps]
+    description: Manage Party applications
+    usage: /partyapplications
+  partyrecruitment:
+    aliases: [precruit]
+    description: Set Party recruitment mode
+    usage: /partyrecruitment <open|application|closed>
+  partyrankperms:
+    aliases: [prankperms]
+    description: Show configurable interaction capabilities for your Party role
+    usage: /partyrankperms
 permissions:
   menkiestesparty.admin:
     description: Full MENKIESTESParty administration

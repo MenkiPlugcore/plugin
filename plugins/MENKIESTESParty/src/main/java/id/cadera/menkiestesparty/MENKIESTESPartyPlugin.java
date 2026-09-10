@@ -9,6 +9,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private PartyService parties;
     private ProgressionManager progression;
     private ProgressionGuiV122 progressionGui;
+    private InteractionManager interactions;
     private WarManager war;
     private SeasonManager season;
     private RewardHallManager hall;
@@ -26,6 +27,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         // Compatibility shell retained from v1.1.0. Party Hall is removed;
         // this component only owns Daily Party Missions and legacy no-op methods.
         this.hall = new RewardHallManager(this, parties, storage);
+        this.interactions = new InteractionManager(this, parties, storage);
         this.partyGui = new PartyManageGui(this, parties);
         this.progressionGui = new ProgressionGuiV122(this, parties, progression);
 
@@ -36,11 +38,16 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         }
         Bukkit.getPluginManager().registerEvents(new PartyListener(this, parties, war), this);
         Bukkit.getPluginManager().registerEvents(progression, this);
+        Bukkit.getPluginManager().registerEvents(interactions, this);
         Bukkit.getPluginManager().registerEvents(partyGui, this);
         Bukkit.getPluginManager().registerEvents(progressionGui, this);
 
         Bukkit.getScheduler().runTaskTimer(this, () -> { war.tickSecond(); if (dirty) flush(); }, 20L, 20L);
-        Bukkit.getScheduler().runTaskTimer(this, () -> { war.tickMinute(); parties.tickWeeklyReset(); }, 1200L, 1200L);
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            war.tickMinute();
+            parties.tickWeeklyReset();
+            interactions.tickMinute();
+        }, 1200L, 1200L);
 
         if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             try {
@@ -51,11 +58,14 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             }
         }
         getLogger().info("MENKIESTESParty v" + getDescription().getVersion()
-                + " enabled. Progression modules: projects=" + progression.moduleEnabled("projects")
+                + " enabled. Progression: projects=" + progression.moduleEnabled("projects")
                 + ", skills=" + progression.moduleEnabled("skill-tree")
                 + ", divisions=" + progression.moduleEnabled("divisions")
                 + ", identity=" + progression.moduleEnabled("identity")
-                + ", gui=" + progressionGui.enabled());
+                + ", gui=" + progressionGui.enabled()
+                + ". Interaction: contracts=" + interactions.moduleEnabled("contracts")
+                + ", diplomacy=" + interactions.moduleEnabled("diplomacy")
+                + ", applications=" + interactions.moduleEnabled("applications"));
     }
 
     private void migrateConfig() {
@@ -89,6 +99,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().set(polishMarker, true);
             getLogger().info("Config migration: v1.2.2 GUI safety/pagination defaults merged into config.yml.");
         }
+
+        String interactionMarker = "migrations.interaction-v1_3_0";
+        if (!getConfig().getBoolean(interactionMarker, false)) {
+            getConfig().options().copyDefaults(true);
+            getConfig().set(interactionMarker, true);
+            getLogger().info("Config migration: v1.3.0 interaction/rank defaults merged into config.yml.");
+        }
         saveConfig();
     }
 
@@ -99,6 +116,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public PartyService parties() { return parties; }
     public ProgressionManager progression() { return progression; }
     public ProgressionGuiV122 progressionGui() { return progressionGui; }
+    public InteractionManager interactions() { return interactions; }
     public WarManager war() { return war; }
     public SeasonManager season() { return season; }
     public RewardHallManager hall() { return hall; }

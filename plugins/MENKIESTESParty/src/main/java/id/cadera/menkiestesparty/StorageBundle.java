@@ -12,10 +12,12 @@ public final class StorageBundle {
     private final File warsFile;
     private final File seasonFile;
     private final File hallFile;
+    private final File interactionsFile;
     public final YamlConfiguration parties;
     public final YamlConfiguration wars;
     public final YamlConfiguration season;
     public final YamlConfiguration hall;
+    public final YamlConfiguration interactions;
 
     public StorageBundle(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -24,10 +26,12 @@ public final class StorageBundle {
         this.warsFile = new File(plugin.getDataFolder(), "wars.yml");
         this.seasonFile = new File(plugin.getDataFolder(), "season.yml");
         this.hallFile = new File(plugin.getDataFolder(), "hall.yml");
+        this.interactionsFile = new File(plugin.getDataFolder(), "interactions.yml");
         this.parties = YamlConfiguration.loadConfiguration(partiesFile);
         this.wars = YamlConfiguration.loadConfiguration(warsFile);
         this.season = YamlConfiguration.loadConfiguration(seasonFile);
         this.hall = YamlConfiguration.loadConfiguration(hallFile);
+        this.interactions = YamlConfiguration.loadConfiguration(interactionsFile);
     }
 
     public void saveAll() {
@@ -36,6 +40,7 @@ public final class StorageBundle {
             wars.save(warsFile);
             season.save(seasonFile);
             hall.save(hallFile);
+            interactions.save(interactionsFile);
         } catch (IOException e) {
             plugin.getLogger().severe("Gagal menyimpan data Party: " + e.getMessage());
         }

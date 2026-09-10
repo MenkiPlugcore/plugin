@@ -47,6 +47,11 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
             String id=plugin.progression().currentProject(party);
             return id==null?"0/0":((int)Math.floor(plugin.progression().projectProgress(party)))+"/"+plugin.progression().projectGoal(id);
         }
+
+        if(identifier.equalsIgnoreCase("recruitment"))return party==null?"None":plugin.interactions().recruitmentMode(party);
+        if(identifier.equalsIgnoreCase("contracts_active"))return party==null?"0":String.valueOf(plugin.interactions().activeContractCount(party));
+        if(identifier.equalsIgnoreCase("contracts_completed"))return party==null?"0":String.valueOf(plugin.interactions().completedContractCount(party));
+        if(identifier.equalsIgnoreCase("applications_pending"))return party==null?"0":String.valueOf(plugin.interactions().pendingApplicationCount(party));
         return null;
     }
 }

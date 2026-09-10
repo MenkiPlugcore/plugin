@@ -84,14 +84,17 @@ season:
   champion-reputation: 1000
 
 # ---------------------------------------------------------------------------
-# v1.2.x - Party Progression modules
-# Set false untuk mematikan fitur tanpa mematikan core Party.
+# Modular feature switches.
+# Core Party tetap aktif walaupun seluruh module di bawah dimatikan.
 # ---------------------------------------------------------------------------
 modules:
   projects: true
   skill-tree: true
   divisions: true
   identity: true
+  contracts: true
+  diplomacy: true
+  applications: true
 
 # v1.2.2 - Progression GUI safety & usability.
 # Command tetap berfungsi jika GUI dimatikan.
@@ -204,3 +207,55 @@ progression:
       AGRARIAN: 'Agrarian'
       PROJECT_FOCUSED: 'Project Focused'
       BALANCED: 'Balanced'
+
+# ---------------------------------------------------------------------------
+# v1.3.0 - Party Interaction Update
+# Data runtime disimpan terpisah di interactions.yml.
+# ---------------------------------------------------------------------------
+interaction:
+  contracts:
+    # Type built-in: mining, hunter, farmer.
+    min-goal: 10
+    max-goal: 10000
+    max-open-per-party: 3
+    max-active-per-party: 2
+    proposal-expire-hours: 24
+    active-expire-hours: 48
+    pair-cooldown-minutes: 60
+    history-retention-days: 30
+    placed-block-memory-cap: 5000
+    allow-rival-parties: false
+
+    # Default 0 untuk mencegah dua Party/alt Party farming XP gratis.
+    # Server owner boleh mengaktifkan reward ini jika memang diinginkan.
+    party-xp-reward: 0
+
+    # Trust Score berada pada range -100 sampai +100.
+    trust-on-complete: 5
+    trust-on-fail: 2
+
+  diplomacy:
+    request-expire-hours: 24
+
+  applications:
+    # OPEN = /party apply langsung join jika slot tersedia.
+    # APPLICATION = menunggu Owner/Officer accept.
+    # CLOSED = tidak menerima pemain.
+    default-recruitment-mode: APPLICATION
+    expire-hours: 48
+    max-active-per-player: 3
+    max-note-length: 80
+
+# Configurable capability untuk fitur Interaction v1.3.
+# OWNER selalu diizinkan agar Party tidak dapat terkunci karena salah config.
+# OFFICER dan MEMBER bisa diubah bebas oleh server owner.
+# Wildcard didukung, contoh: contracts.* atau *
+rank-permissions:
+  enabled: true
+  officer:
+    - contracts.create
+    - contracts.respond
+    - diplomacy.manage
+    - recruitment.manage
+    - applications.manage
+  member: []
