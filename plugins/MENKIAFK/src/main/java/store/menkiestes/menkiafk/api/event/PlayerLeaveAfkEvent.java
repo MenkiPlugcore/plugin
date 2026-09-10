@@ -3,7 +3,6 @@ package store.menkiestes.menkiafk.api.event;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
-import org.jetbrains.annotations.NotNull;
 import store.menkiestes.menkiafk.api.AfkSessionSnapshot;
 
 import java.util.Objects;
@@ -42,11 +41,11 @@ public final class PlayerLeaveAfkEvent extends Event {
     }
 
     @Override
-    public @NotNull HandlerList getHandlers() {
+    public HandlerList getHandlers() {
         return HANDLERS;
     }
 
-    public static @NotNull HandlerList getHandlerList() {
+    public static HandlerList getHandlerList() {
         return HANDLERS;
     }
 }
