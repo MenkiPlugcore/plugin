@@ -1,8 +1,6 @@
 package id.cadera.menkiestesparty;
 
-import id.cadera.menkiestesparty.api.MenkiPartyAPI;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
-import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -16,31 +14,28 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
     @Override public boolean persist(){return true;}
 
     @Override public @Nullable String onRequest(OfflinePlayer player, @NotNull String identifier) {
-        if(identifier.equalsIgnoreCase("api_version"))return MenkiPartyAPI.API_VERSION;
+        if(identifier.equalsIgnoreCase("api_version"))return plugin.developerApi().apiVersion();
         if(identifier.equalsIgnoreCase("plugin_version"))return plugin.getDescription().getVersion();
+        if(identifier.equalsIgnoreCase("api_health"))return plugin.apiHardening().healthLabel();
         if(identifier.equalsIgnoreCase("vault_available"))return plugin.developerApi().integrationAvailable("vault")?"true":"false";
         if(player==null)return "";
-
         String party=plugin.parties().partyOf(player.getUniqueId());
         if(identifier.equalsIgnoreCase("name"))return party==null?"None":plugin.parties().display(party);
         if(identifier.equalsIgnoreCase("role"))return party==null?"None":String.valueOf(plugin.parties().role(player.getUniqueId()));
         if(identifier.equalsIgnoreCase("level"))return party==null?"0":String.valueOf(plugin.parties().level(party));
         if(identifier.equalsIgnoreCase("reputation")||identifier.equalsIgnoreCase("rep"))return party==null?"0":String.valueOf(plugin.parties().rep(party));
         if(identifier.equalsIgnoreCase("members"))return party==null?"0":String.valueOf(plugin.parties().memberCount(party));
-        if(identifier.equalsIgnoreCase("online_members")){
-            if(party==null)return "0";
-            return plugin.developerApi().party(party).map(p->String.valueOf(p.onlineMembers())).orElse("0");
-        }
         if(identifier.equalsIgnoreCase("memberlimit"))return party==null?"0":String.valueOf(plugin.parties().memberLimit(party));
         if(identifier.equalsIgnoreCase("nextrep"))return party==null?"0":String.valueOf(plugin.parties().nextLevelRep(party));
         if(identifier.equalsIgnoreCase("owner")){
-            if(party==null)return "None";
-            java.util.UUID owner=plugin.parties().owner(party);
-            if(owner==null)return "None";
-            String name=Bukkit.getOfflinePlayer(owner).getName();
-            return name==null?owner.toString():name;
+            if(party==null||plugin.parties().owner(party)==null)return "None";
+            String name=org.bukkit.Bukkit.getOfflinePlayer(plugin.parties().owner(party)).getName();
+            return name==null?plugin.parties().owner(party).toString():name;
         }
-
+        if(identifier.equalsIgnoreCase("online_members")){
+            if(party==null)return "0";
+            return String.valueOf(plugin.developerApi().party(party).map(id.cadera.menkiestesparty.api.MenkiPartyAPI.PartySnapshot::onlineMembers).orElse(0));
+        }
         if(identifier.equalsIgnoreCase("quest_mining"))return party==null?"0/0":plugin.parties().questProgress(party,"mining")+"/"+plugin.parties().questGoal("mining");
         if(identifier.equalsIgnoreCase("quest_hunter"))return party==null?"0/0":plugin.parties().questProgress(party,"hunter")+"/"+plugin.parties().questGoal("hunter");
         if(identifier.equalsIgnoreCase("quest_farmer"))return party==null?"0/0":plugin.parties().questProgress(party,"farmer")+"/"+plugin.parties().questGoal("farmer");
@@ -67,10 +62,9 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
             return id==null?"0/0":((int)Math.floor(plugin.progression().projectProgress(party)))+"/"+plugin.progression().projectGoal(id);
         }
         if(identifier.equalsIgnoreCase("project_percent")){
-            if(party==null)return "0";
+            if(party==null)return "0.0";
             return plugin.developerApi().currentProject(party)
-                    .map(p->String.format(java.util.Locale.US,"%.1f",p.percent()))
-                    .orElse("0");
+                    .map(project->String.format(java.util.Locale.US,"%.1f",project.percent())).orElse("0.0");
         }
 
         if(identifier.equalsIgnoreCase("recruitment"))return party==null?"None":plugin.interactions().recruitmentMode(party);
@@ -79,14 +73,14 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
         if(identifier.equalsIgnoreCase("applications_pending"))return party==null?"0":String.valueOf(plugin.interactions().pendingApplicationCount(party));
         if(identifier.equalsIgnoreCase("inbox_unread"))return String.valueOf(plugin.stability().unreadCount(player.getUniqueId()));
 
-        if(identifier.regionMatches(true,0,"relation_",0,9)){
+        if(identifier.toLowerCase(java.util.Locale.ROOT).startsWith("relation_")){
             if(party==null)return "NEUTRAL";
-            String target=identifier.substring(9);
+            String target=identifier.substring("relation_".length());
             return plugin.developerApi().relation(party,target).relation();
         }
-        if(identifier.regionMatches(true,0,"trust_",0,6)){
+        if(identifier.toLowerCase(java.util.Locale.ROOT).startsWith("trust_")){
             if(party==null)return "0";
-            String target=identifier.substring(6);
+            String target=identifier.substring("trust_".length());
             return String.valueOf(plugin.developerApi().relation(party,target).trust());
         }
         return null;

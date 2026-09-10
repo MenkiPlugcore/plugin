@@ -1,6 +1,6 @@
 plugins { java }
 group = "id.cadera"
-version = "1.4.0"
+version = "1.4.1"
 repositories {
     mavenCentral()
     maven("https://repo.papermc.io/repository/maven-public/")
@@ -9,6 +9,8 @@ repositories {
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
     compileOnly("me.clip:placeholderapi:2.11.6")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
 }
 java { toolchain.languageVersion.set(JavaLanguageVersion.of(21)) }
 tasks.withType<JavaCompile> { options.encoding = "UTF-8" }
+tasks.test { useJUnitPlatform() }

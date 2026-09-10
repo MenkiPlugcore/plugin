@@ -281,7 +281,7 @@ stability:
     safe-repair-periodic: true
 
 # ---------------------------------------------------------------------------
-# v1.4.0 - Developer API & Integration
+# v1.4.x - Developer API & Integration
 # API memakai immutable snapshots dan tidak mengekspos YAML internal.
 # Semua reward default kosong/0 sehingga upgrade tidak mengubah balance.
 # ---------------------------------------------------------------------------
@@ -317,3 +317,24 @@ developer:
     war-win:
       vault-owner-money: 0
       commands: []
+
+  # v1.4.1 - guard kontrak API, event duplicate, dan reward duplicate.
+  hardening:
+    enabled: true
+
+    # Jika kontrak API v1.0 gagal self-check, hanya public API service yang
+    # dilepas dari ServicesManager. Party core tetap aktif.
+    fail-closed-on-contract-error: true
+    log-startup-diagnostics: true
+
+    # Fingerprint transition yang sama tidak boleh memicu event dua kali dalam
+    # window ini. 5000 ms cukup longgar untuk melindungi tick/reload abnormal.
+    event-dedup-window-ms: 5000
+
+    # Reward receipt disimpan di interactions.yml dengan semantics at-most-once.
+    reward-receipt-retention-days: 90
+
+    rewards:
+      # Guard supaya config reward yang salah tidak dispatch command tak terbatas.
+      max-commands-per-trigger: 20
+      max-command-length: 512

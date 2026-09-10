@@ -15,6 +15,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private InteractionGui interactionGui;
     private PartyStabilityManager stability;
     private DeveloperApiManager developerApi;
+    private ApiHardeningManager apiHardening;
     private WarManager war;
     private SeasonManager season;
     private RewardHallManager hall;
@@ -36,6 +37,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.interactionGui = new InteractionGui(this, parties, storage, interactions);
         this.stability = new PartyStabilityManager(this, parties, storage, interactions);
         this.developerApi = new DeveloperApiManager(this, parties, progression, interactions, storage);
+        this.apiHardening = new ApiHardeningManager(this, parties, progression, interactions, storage, developerApi);
         this.partyGui = new PartyManageGui(this, parties);
         this.progressionGui = new ProgressionGuiV122(this, parties, progression);
 
@@ -57,10 +59,19 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getLogger().info("MENKIESTESParty API v" + developerApi.apiVersion() + " registered in Bukkit ServicesManager.");
         }
 
+        boolean apiHealthy = apiHardening.startupCheck();
+        if (developerApi.enabled() && !apiHealthy && apiHardening.failClosed()) {
+            Bukkit.getServicesManager().unregister(MenkiPartyAPI.class, developerApi);
+            getLogger().severe("Public MENKIESTESParty API service unregistered by v1.4.1 fail-closed guard. Core Party remains enabled.");
+        }
+
         Bukkit.getScheduler().runTaskTimer(this, () -> { war.tickSecond(); if (dirty) flush(); }, 20L, 20L);
         Bukkit.getScheduler().runTaskTimer(this, stability::tickFast, 100L, 100L);
         long apiScanTicks = Math.max(1L, getConfig().getLong("developer.events.scan-ticks", 20L));
-        Bukkit.getScheduler().runTaskTimer(this, developerApi::tick, apiScanTicks, apiScanTicks);
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            if (apiHardening.enabled()) apiHardening.tick();
+            else developerApi.tick();
+        }, apiScanTicks, apiScanTicks);
         Bukkit.getScheduler().runTaskTimer(this, () -> {
             war.tickMinute();
             parties.tickWeeklyReset();
@@ -88,6 +99,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
                 + ", interaction-gui=" + interactionGui.enabled()
                 + ", stability=" + stability.enabled()
                 + ". Developer: api=" + developerApi.enabled()
+                + ", api-health=" + apiHardening.healthLabel()
                 + ", vault=" + developerApi.integrationAvailable("vault"));
     }
 
@@ -150,6 +162,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().set(developerMarker, true);
             getLogger().info("Config migration: v1.4.0 Developer API/integration defaults merged into config.yml.");
         }
+
+        String hardeningMarker = "migrations.developer-api-hardening-v1_4_1";
+        if (!getConfig().getBoolean(hardeningMarker, false)) {
+            getConfig().options().copyDefaults(true);
+            getConfig().set(hardeningMarker, true);
+            getLogger().info("Config migration: v1.4.1 API hardening/compatibility defaults merged into config.yml.");
+        }
         saveConfig();
     }
 
@@ -167,6 +186,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public InteractionGui interactionGui() { return interactionGui; }
     public PartyStabilityManager stability() { return stability; }
     public DeveloperApiManager developerApi() { return developerApi; }
+    public ApiHardeningManager apiHardening() { return apiHardening; }
     public WarManager war() { return war; }
     public SeasonManager season() { return season; }
     public RewardHallManager hall() { return hall; }
@@ -174,5 +194,6 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
 
     public void reloadPluginConfig() {
         reloadConfig();
+        if (apiHardening != null) apiHardening.verifyCompatibility();
     }
 }
