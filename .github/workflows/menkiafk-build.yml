@@ -114,8 +114,8 @@ jobs:
             exit 1
           fi
 
-          javap -verbose -classpath "$JAR_LOCAL" store.menkiestes.menkiafk.MenkiAfkPlugin \
-            | grep -Fq 'major version: 65'
+          javap -verbose -classpath "$JAR_LOCAL" store.menkiestes.menkiafk.MenkiAfkPlugin > target/javap-main.txt
+          grep -Fq 'major version: 65' target/javap-main.txt
 
           jdeps --ignore-missing-deps -q "$JAR_LOCAL" > target/jdeps.txt
           if grep -Eq 'net\.minecraft|org\.bukkit\.craftbukkit' target/jdeps.txt; then
