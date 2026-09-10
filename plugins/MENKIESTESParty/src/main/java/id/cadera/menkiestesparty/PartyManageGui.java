@@ -39,8 +39,9 @@ public final class PartyManageGui implements Listener {
                 parties.canManage(player.getUniqueId()) ? "&7Klik untuk pilih player online." : "&cHanya Owner/Officer."));
         inv.setItem(13, Util.item(Material.CHEST, "&eManage Members",
                 "&7Lihat roster Party.", parties.canManage(player.getUniqueId()) ? "&7Klik member untuk manage." : "&7Mode lihat saja."));
-        inv.setItem(15, Util.item(Material.ENDER_CHEST, "&6Party Reward Hall",
-                "&7Lihat reward Hall dan status claim."));
+        inv.setItem(15, Util.item(Material.NETHER_STAR, "&dParty Progression",
+                "&7Projects, Skill Tree, Divisions dan Identity.",
+                plugin.progressionGui().enabled() ? "&aKlik untuk buka Progression Hub." : "&cProgression GUI dinonaktifkan."));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -53,7 +54,7 @@ public final class PartyManageGui implements Listener {
             if (event.getRawSlot() == 11 || event.getRawSlot() == 13 || event.getRawSlot() == 15) event.setCancelled(true);
             if (event.getRawSlot() == 11) openInviteMenu(player);
             else if (event.getRawSlot() == 13) openMemberMenu(player);
-            else if (event.getRawSlot() == 15) { player.closeInventory(); plugin.hall().show(player); }
+            else if (event.getRawSlot() == 15) plugin.progressionGui().openHub(player);
             return;
         }
 
@@ -105,6 +106,8 @@ public final class PartyManageGui implements Listener {
                 OfflinePlayer target = Bukkit.getOfflinePlayer(targetId);
                 parties.setRole(player, target, current == PartyService.Role.OFFICER ? PartyService.Role.MEMBER : PartyService.Role.OFFICER);
                 openMemberMenu(player);
+            } else if (event.getRawSlot() == 14 && plugin.progression().moduleEnabled("divisions")) {
+                plugin.progressionGui().openMemberDivisionMenu(player, targetId);
             } else if (event.getRawSlot() == 15) {
                 parties.kick(player, Bukkit.getOfflinePlayer(targetId));
                 openMemberMenu(player);
@@ -153,9 +156,13 @@ public final class PartyManageGui implements Listener {
             if (slot >= 45) break;
             PartyService.Role targetRole = parties.role(uuid);
             boolean manageable = canManageTarget(player.getUniqueId(), uuid);
-            inv.setItem(slot++, taggedItem(Material.PLAYER_HEAD, "&b" + memberName(uuid), uuid,
-                    "&7Role: &f" + (targetRole == null ? "MEMBER" : targetRole.name()),
-                    uuid.equals(player.getUniqueId()) ? "&8Ini kamu." : (manageable ? "&aKlik untuk manage." : "&8Tidak dapat dikelola oleh role kamu.")));
+            List<String> lore = new ArrayList<>();
+            lore.add("&7Role: &f" + (targetRole == null ? "MEMBER" : targetRole.name()));
+            if (plugin.progression().moduleEnabled("divisions")) {
+                lore.add("&7Division: &b" + plugin.progression().divisionDisplay(plugin.progression().divisionOf(uuid)));
+            }
+            lore.add(uuid.equals(player.getUniqueId()) ? "&8Ini kamu." : (manageable ? "&aKlik untuk manage." : "&8Tidak dapat dikelola oleh role kamu."));
+            inv.setItem(slot++, taggedItem(Material.PLAYER_HEAD, "&b" + memberName(uuid), uuid, lore.toArray(String[]::new)));
         }
         inv.setItem(49, Util.item(Material.ARROW, "&eKembali", "&7Kembali ke menu Party."));
         player.openInventory(inv);
@@ -165,7 +172,9 @@ public final class PartyManageGui implements Listener {
         if (!canManageTarget(actor.getUniqueId(), target)) return;
         PartyService.Role targetRole = parties.role(target);
         Inventory inv = Bukkit.createInventory(null, 27, Util.color("&8Manage Member"));
-        inv.setItem(13, taggedItem(Material.PLAYER_HEAD, "&b" + memberName(target), target, "&7Role: &f" + targetRole));
+        inv.setItem(13, taggedItem(Material.PLAYER_HEAD, "&b" + memberName(target), target,
+                "&7Role: &f" + targetRole,
+                plugin.progression().moduleEnabled("divisions") ? "&7Division: &b" + plugin.progression().divisionDisplay(plugin.progression().divisionOf(target)) : "&7Division module disabled"));
 
         if (parties.role(actor.getUniqueId()) == PartyService.Role.OWNER) {
             if (targetRole == PartyService.Role.MEMBER) {
@@ -173,6 +182,10 @@ public final class PartyManageGui implements Listener {
             } else if (targetRole == PartyService.Role.OFFICER) {
                 inv.setItem(11, taggedItem(Material.YELLOW_DYE, "&eDemote Member", target, "&7Turunkan Officer menjadi Member."));
             }
+        }
+        if (plugin.progression().moduleEnabled("divisions")) {
+            inv.setItem(14, taggedItem(Material.SHIELD, "&bSet Division", target,
+                    "&7Atur spesialisasi member ini."));
         }
         inv.setItem(15, taggedItem(Material.BARRIER, "&cKick Member", target, "&7Keluarkan dari Party."));
         inv.setItem(22, Util.item(Material.ARROW, "&eKembali", "&7Kembali ke roster."));

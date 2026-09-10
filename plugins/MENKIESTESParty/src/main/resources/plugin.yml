@@ -1,9 +1,9 @@
 name: MENKIESTESParty
-version: 1.2.0
+version: 1.2.1
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
-description: Modular Paper Party system with missions, projects, skill tree, divisions, dynamic identity and Party War.
+description: Modular Paper Party system with missions, projects, skill tree, divisions, dynamic identity, progression GUI and Party War.
 softdepend: [PlaceholderAPI, GriefPrevention]
 commands:
   party:

@@ -1,12 +1,34 @@
-# MENKIESTESParty v1.2.0
+# MENKIESTESParty v1.2.1
 
 Native Paper Party/Guild framework by CADERA. Designed for Paper 1.21.11 / Java 21 with local YAML storage and no required database.
 
-## v1.2.0 — Party Progression Update
+## v1.2.1 — Progression GUI Update
 
-MENKIESTESParty now adds a progression layer beyond normal team commands while keeping every major feature optional.
+v1.2.1 adds an inventory-based interface for the v1.2 progression system while keeping every command available.
 
-### Party Projects
+Open `/party` and use **Party Progression** to access:
+
+- Party Profile
+- Party Projects
+- Party Skill Tree
+- Party Divisions
+- Dynamic Party Identity
+
+Project start/cancel, Skill unlock, self-select Division, and Owner/Officer Division management can now be done from GUI.
+
+The obsolete Party Reward Hall button has been removed from the main Party GUI and replaced with the Progression Hub.
+
+The GUI is optional:
+
+```yaml
+gui:
+  progression:
+    enabled: true
+```
+
+If disabled, all progression commands continue working normally.
+
+## Party Projects
 
 One shared long-term objective can be active per Party. Default projects:
 
@@ -25,7 +47,7 @@ Commands:
 - `/party project cancel`
 - `/partyproject` / `/pproject`
 
-### Party Skill Tree
+## Party Skill Tree
 
 Party Level automatically provides Skill Points: 1 point for every level after Level 1 by default. Only the Owner spends Party Skill Points.
 
@@ -41,7 +63,7 @@ Commands:
 - `/party skill unlock <node>`
 - `/partyskill` / `/pskill`
 
-### Party Divisions
+## Party Divisions
 
 Divisions do not replace Owner/Officer/Member roles. They are an additional specialization layer.
 
@@ -58,7 +80,7 @@ Commands:
 - `/party division set <player> <id|none>` — Owner/Officer
 - `/partydivision` / `/pdivision`
 
-### Dynamic Party Identity
+## Dynamic Party Identity
 
 Identity is not selected manually. It is calculated from the Party's recent activity using a rolling 30-day window by default.
 
@@ -76,13 +98,13 @@ Commands:
 - `/party identity`
 - `/partyidentity` / `/pidentity`
 
-### Party Profile
+## Party Profile
 
-`/party profile` or `/partyprofile` shows Party Level, XP, member count, Identity, Skill Points, member Division, and active Project.
+`/party profile` or `/partyprofile` shows Party Level, XP, member count, Identity, Skill Points, member Division, and active Project. The same information is available from the Progression GUI.
 
 ## Modular configuration
 
-Each v1.2 feature can be disabled independently:
+Each progression feature can be disabled independently:
 
 ```yaml
 modules:
@@ -92,7 +114,7 @@ modules:
   identity: true
 ```
 
-Core Party, Weekly Quest, Daily Mission, Party Relic, Party War and Season remain compatible with v1.1.0 data.
+Core Party, Weekly Quest, Daily Mission, Party Relic, Party War and Season remain compatible with v1.1.0/v1.2.0 data.
 
 ## PlaceholderAPI
 
@@ -104,9 +126,9 @@ Existing `%mparty_*%` placeholders remain. v1.2 adds:
 - `%mparty_project%`
 - `%mparty_project_progress%`
 
-## Upgrade from v1.1.0
+## Upgrade from v1.2.0
 
-Replace the JAR and restart the server. Do not delete `plugins/MENKIESTESParty/`. Existing `parties.yml`, `wars.yml`, and `season.yml` remain valid. Missing v1.2 config defaults are merged into the existing `config.yml` on first startup.
+Replace the JAR and restart the server. Do not delete `plugins/MENKIESTESParty/`. Existing `parties.yml`, `wars.yml`, and `season.yml` remain valid. Missing v1.2.1 GUI defaults are merged into the existing `config.yml` on first startup.
 
 ## Requirements
 

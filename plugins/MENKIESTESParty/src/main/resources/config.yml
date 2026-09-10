@@ -84,7 +84,7 @@ season:
   champion-reputation: 1000
 
 # ---------------------------------------------------------------------------
-# v1.2.0 - Party Progression modules
+# v1.2.x - Party Progression modules
 # Set false untuk mematikan fitur tanpa mematikan core Party.
 # ---------------------------------------------------------------------------
 modules:
@@ -92,6 +92,11 @@ modules:
   skill-tree: true
   divisions: true
   identity: true
+
+# v1.2.1 - GUI progression optional. Command tetap berfungsi jika GUI dimatikan.
+gui:
+  progression:
+    enabled: true
 
 progression:
   projects:

@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.2.1 - 2026-09-10
+
+Progression GUI Update.
+
+### Added
+
+- New Progression Hub accessible from the main `/party` GUI.
+- Inventory GUI for Party Profile.
+- Inventory GUI for Party Projects, including project start and cancel actions.
+- Inventory GUI for Party Skill Tree with clickable unlock nodes.
+- Inventory GUI for Party Divisions with self-select support.
+- Owner/Officer GUI flow to assign Divisions to Party members.
+- Inventory GUI for Dynamic Party Identity with activity breakdown.
+- Division information is now visible in the Party member roster.
+- New `gui.progression.enabled` toggle. Commands remain available when the GUI is disabled.
+- v1.2.1 config migration merges the new GUI defaults into existing configs.
+
+### Changed
+
+- Removed the obsolete Party Reward Hall button from the main Party GUI.
+- The old Hall slot is now used by Party Progression.
+- Existing v1.2.0 progression data remains fully compatible.
+
 ## 1.2.0 - 2026-09-10
 
 Party Progression Update.
