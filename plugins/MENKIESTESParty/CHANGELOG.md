@@ -2,6 +2,37 @@
 
 All notable MENKIESTESParty changes are documented here. Releases remain standalone/public-plugin oriented and preserve the custom MENKIESTES/CADERA project licensing while respecting bundled third-party notices.
 
+## 1.6.1 - 2026-09-10
+
+Administration Stability & Safety Patch.
+
+### Added
+
+- Per-staff 6-character confirmation token for dangerous admin actions.
+- Exactly-once confirmation consumption with replay/concurrency protection.
+- Configurable wrong-token attempt cap and automatic cancellation.
+- Pending confirmation cleanup when staff disconnects.
+- Failed/cancelled/expired confirmation outcomes in the bounded audit log.
+- `/partyadmin health` administration health summary.
+- `/partyadmin search <query> [page]` Party search.
+- `/partyadmin inspect <party> verbose` cross-index/integrity diagnostics.
+- Verified repair post-check showing integrity warnings before and after repair.
+- Unique export/archive filenames to prevent accidental overwrite.
+- YAML snapshot content verification and SHA-256 sidecars.
+- Independent verified pre-disband safety snapshot before the v1.6.0 archive-first disband path executes.
+- JUnit regression tests for confirmation exactly-once behavior, token failure/expiry, archive collision protection, checksum tamper detection, metadata and API compatibility.
+
+### Safety / Compatibility
+
+- Dangerous mutations still reuse the v1.6.0 validated administration implementation after the v1.6.1 safety gate succeeds.
+- Transfer Owner is rejected before staging if the target is not already a Party member.
+- Reset Contract is rejected before staging unless the Contract is ACTIVE.
+- Disband is rejected before staging while Party War roster locking is active.
+- `MenkiPartyAPI.API_VERSION` remains `1.0`.
+- YAML remains the default local backend; SQLite/MySQL remain optional.
+- Java 21 build, MySQL 8.4 integration and Java 25 runtime probes remain release gates.
+- GitHub Release publication remains automatic after all production gates succeed.
+
 ## 1.6.0 - 2026-09-10
 
 Administration & Moderation Update.

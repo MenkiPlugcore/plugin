@@ -1,4 +1,4 @@
-# MENKIESTESParty v1.6.0
+# MENKIESTESParty v1.6.1
 
 Modular Paper Party/Guild framework by **CADERA** for Paper 1.21.11 / Java 21.
 
@@ -36,16 +36,16 @@ SQL is **not required**. YAML remains a first-class supported backend.
 
 See [`STORAGE.md`](STORAGE.md).
 
-## Administration — v1.6.0
+## Administration — v1.6.1
 
 ```text
 /partyadmin
 /party admin ...
 ```
 
-v1.6.0 adds an Admin Browser/Inspect GUI, force join/remove, owner transfer, display rename, reversible Party freeze, XP controls, conservative repair, Project/Contract reset, export/archive, archive-first disband and bounded staff audit history.
+v1.6.0 introduced the Admin Browser/Inspect GUI, force join/remove, owner transfer, display rename, reversible Party freeze, XP controls, conservative repair, Project/Contract reset, export/archive, archive-first disband and bounded staff audit history.
 
-High-impact actions use a two-stage confirmation flow.
+v1.6.1 hardens that layer with per-staff one-time confirmation tokens, exactly-once dangerous-action consumption, failed-action auditing, verified SHA-256 admin snapshots, collision-safe exports, `/partyadmin health`, Party search, verbose integrity inspection and post-repair verification.
 
 See [`ADMINISTRATION.md`](ADMINISTRATION.md).
 
@@ -71,7 +71,7 @@ Every MENKIESTESParty version must be documented in GitHub as part of the releas
 Release documentation currently includes:
 
 - [`CHANGELOG.md`](CHANGELOG.md) — chronological version history
-- [`RELEASE_NOTES_v1.6.0.md`](RELEASE_NOTES_v1.6.0.md) — current release notes
+- [`RELEASE_NOTES_v1.6.1.md`](RELEASE_NOTES_v1.6.1.md) — current release notes
 - [`ADMINISTRATION.md`](ADMINISTRATION.md) — admin/moderation wiki
 - [`STORAGE.md`](STORAGE.md) — storage/migration guide
 - [`API.md`](API.md) — public API guide
@@ -83,9 +83,10 @@ Release documentation currently includes:
 - Storage: YAML
 - SQL: optional
 - Administration: enabled for permitted staff only
-- Dangerous admin actions: confirmation required
+- Dangerous admin actions: token confirmation required
+- Admin snapshots: content-verified + SHA-256 sidecar
 - Contract automatic Party XP: 0 unless configured
-- Folia: experimental only; not production-certified in v1.6.0
+- Folia: experimental only; not production-certified in v1.6.1
 - Public API: v1.0
 
 ## Build
@@ -94,7 +95,7 @@ Release documentation currently includes:
 gradle clean build
 ```
 
-The GitHub Actions release gate verifies Java 21 compilation/tests, the production JAR contents, MySQL integration, and Java 25 runtime compatibility of the Java-21-targeted artifact.
+The GitHub Actions release gate verifies Java 21 compilation/tests, the production JAR contents, MySQL integration, Java 25 runtime compatibility, release documentation, and then publishes the verified JAR plus SHA-256 to GitHub Releases.
 
 ## License
 

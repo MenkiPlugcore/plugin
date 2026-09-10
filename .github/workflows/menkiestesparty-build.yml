@@ -36,7 +36,7 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build + API/storage contract tests
+      - name: Build + API/storage/admin contract tests
         run: gradle clean build --stacktrace
 
       - name: Verify production JAR
@@ -48,9 +48,13 @@ jobs:
           JAR="build/libs/MENKIESTESParty-${VERSION}.jar"
           test -f "$JAR"
           test "$(find build/libs -maxdepth 1 -name '*.jar' | wc -l)" -eq 1
+          test -f "RELEASE_NOTES_v${VERSION}.md"
           unzip -p "$JAR" plugin.yml | grep -q "^version: ${VERSION}$"
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/api/MenkiPartyAPI.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/AdministrationManager.class$'
+          jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/AdministrationStabilityManager.class$'
+          jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/AdminConfirmationGate.class$'
+          jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/AdminArchiveIntegrity.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/JdbcStorageBackend.class$'
           jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/StorageIntegrity.class$'
           jar tf "$JAR" | grep -q '^org/sqlite/JDBC.class$'

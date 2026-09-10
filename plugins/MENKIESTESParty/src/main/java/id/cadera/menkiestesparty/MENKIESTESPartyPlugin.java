@@ -17,6 +17,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private InteractionGui interactionGui;
     private PartyStabilityManager stability;
     private AdministrationManager administration;
+    private AdministrationStabilityManager administrationStability;
     private DeveloperApiManager developerApi;
     private ApiHardeningManager apiHardening;
     private WarManager war;
@@ -32,13 +33,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.schedulerCompat = new SchedulerCompat(this);
 
         if (!schedulerCompat.runtimeAllowed()) {
-            getLogger().severe("Folia detected. MENKIESTESParty v1.6.0 blocks Folia by default because full region-thread safety is not certified yet.");
+            getLogger().severe("Folia detected. MENKIESTESParty v1.6.1 blocks Folia by default because full region-thread safety is not certified yet.");
             getLogger().severe("Use compatibility.folia.experimental=true only for controlled testing. Core data was not loaded.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (schedulerCompat.foliaDetected()) {
-            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.6.0.");
+            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.6.1.");
         }
 
         try {
@@ -58,6 +59,8 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.hall = new RewardHallManager(this, parties, storage);
         this.interactions = new InteractionManager(this, parties, storage);
         this.administration = new AdministrationManager(this, parties, progression, interactions, storage);
+        this.administrationStability = new AdministrationStabilityManager(
+                this, administration, parties, progression, interactions, storage);
         this.interactionGui = new InteractionGui(this, parties, storage, interactions);
         this.stability = new PartyStabilityManager(this, parties, storage, interactions);
         this.developerApi = new DeveloperApiManager(this, parties, progression, interactions, storage);
@@ -78,8 +81,9 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             storageCommand.setTabCompleter(storageAdmin);
         }
 
-        // Administration is registered before gameplay/GUI listeners so a freeze
-        // can fail closed before stale interaction buttons or commands mutate data.
+        // v1.6.1 safety wrapper is first so confirmation/export/repair guards
+        // can cancel a route before the v1.6.0 administration listener sees it.
+        Bukkit.getPluginManager().registerEvents(administrationStability, this);
         Bukkit.getPluginManager().registerEvents(administration, this);
         Bukkit.getPluginManager().registerEvents(new PartyListener(this, parties, war), this);
         Bukkit.getPluginManager().registerEvents(progression, this);
@@ -148,6 +152,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
                 + ", interaction-gui=" + interactionGui.enabled()
                 + ", stability=" + stability.enabled()
                 + ". Administration: enabled=" + administration.enabled()
+                + ", safety=" + administrationStability.enabled()
                 + ". Developer: api=" + developerApi.enabled()
                 + ", api-health=" + apiHardening.healthLabel()
                 + ", vault=" + developerApi.integrationAvailable("vault"));
@@ -239,11 +244,19 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().set(administrationMarker, true);
             getLogger().info("Config migration: v1.6.0 Administration & Moderation marker applied.");
         }
+
+        String administrationStabilityMarker = "migrations.administration-stability-v1_6_1";
+        if (!getConfig().getBoolean(administrationStabilityMarker, false)) {
+            getConfig().options().copyDefaults(true);
+            getConfig().set(administrationStabilityMarker, true);
+            getLogger().info("Config migration: v1.6.1 Administration stability defaults merged.");
+        }
         saveConfig();
     }
 
     @Override public void onDisable() {
         Bukkit.getServicesManager().unregisterAll(this);
+        if (administrationStability != null) administrationStability.clearAll();
         if (storage != null) storage.close();
         dirty = false;
     }
@@ -276,6 +289,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public InteractionGui interactionGui() { return interactionGui; }
     public PartyStabilityManager stability() { return stability; }
     public AdministrationManager administration() { return administration; }
+    public AdministrationStabilityManager administrationStability() { return administrationStability; }
     public DeveloperApiManager developerApi() { return developerApi; }
     public ApiHardeningManager apiHardening() { return apiHardening; }
     public WarManager war() { return war; }

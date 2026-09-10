@@ -1,10 +1,16 @@
-# MENKIESTESParty v1.6.0 - Administration & Moderation
-# Staff tooling is command/GUI driven and has no periodic heavy scan.
+# MENKIESTESParty v1.6.1 - Administration Stability & Safety
+# Staff tooling remains command/GUI driven; no continuous heavy admin scan.
 administration:
   enabled: true
 
-  # Dangerous actions (transfer/reset/disband) require /partyadmin confirm.
+  # Lifetime of a staged dangerous action.
   confirmation-seconds: 30
+
+  # v1.6.1: dangerous actions use a per-staff one-time token. A wrong token
+  # never consumes the action until max-attempts is reached.
+  confirmation:
+    require-token: true
+    max-attempts: 3
 
   gui:
     enabled: true
@@ -24,3 +30,9 @@ administration:
   forcejoin:
     # Keep normal Party slot limits even for staff unless explicitly changed.
     allow-over-cap: false
+
+  snapshots:
+    # v1.6.1 admin export/archive and pre-disband safety snapshots always use
+    # unique filenames, YAML content verification and a .sha256 sidecar.
+    format: MENKIESTESParty-admin-snapshot-v1
+    checksum: SHA-256
