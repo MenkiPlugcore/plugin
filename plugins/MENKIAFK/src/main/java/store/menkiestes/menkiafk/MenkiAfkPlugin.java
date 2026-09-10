@@ -8,22 +8,28 @@ import org.bukkit.scheduler.BukkitTask;
 import store.menkiestes.menkiafk.afk.AfkManager;
 import store.menkiestes.menkiafk.command.AfkCheckCommand;
 import store.menkiestes.menkiafk.command.AfkCommand;
+import store.menkiestes.menkiafk.command.AfkStatsCommand;
+import store.menkiestes.menkiafk.command.AfkTopCommand;
 import store.menkiestes.menkiafk.command.MenkiAfkCommand;
 import store.menkiestes.menkiafk.listener.ActivityListener;
 import store.menkiestes.menkiafk.listener.AfkCommandOverrideListener;
 import store.menkiestes.menkiafk.listener.ConnectionListener;
+import store.menkiestes.menkiafk.stats.StatsManager;
 
 import java.util.Objects;
 
 public final class MenkiAfkPlugin extends JavaPlugin {
     private AfkManager afkManager;
+    private StatsManager statsManager;
     private BukkitTask autoAfkTask;
+    private BukkitTask statsSaveTask;
     private boolean placeholderApiHooked;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        afkManager = new AfkManager(this);
+        statsManager = new StatsManager(this);
+        afkManager = new AfkManager(this, statsManager);
 
         registerCommands();
         getServer().getPluginManager().registerEvents(new AfkCommandOverrideListener(this), this);
@@ -36,14 +42,20 @@ public final class MenkiAfkPlugin extends JavaPlugin {
 
         hookPlaceholderApi();
         restartAutoAfkTask();
+        restartStatsSaveTask();
 
-        getLogger().info("MENKIAFK v" + getDescription().getVersion() + " aktif. Universal API baseline: 1.21.11 | Java bytecode: 21 | Runtime storage: RAM only.");
+        getLogger().info("MENKIAFK v" + getDescription().getVersion()
+                + " aktif. Universal API baseline: 1.21.11 | Java bytecode: 21"
+                + " | AFK sessions: RAM | Persistent stats: stats.yml.");
     }
 
     @Override
     public void onDisable() {
         if (autoAfkTask != null) autoAfkTask.cancel();
-        getLogger().info("MENKIAFK dinonaktifkan. Runtime AFK dibersihkan otomatis.");
+        if (statsSaveTask != null) statsSaveTask.cancel();
+        if (afkManager != null) afkManager.shutdown();
+        if (statsManager != null) statsManager.saveNow();
+        getLogger().info("MENKIAFK dinonaktifkan. Statistik AFK telah disimpan.");
     }
 
     private void registerCommands() {
@@ -53,8 +65,16 @@ public final class MenkiAfkPlugin extends JavaPlugin {
         PluginCommand afkCheck = Objects.requireNonNull(getCommand("afkcheck"), "Command /afkcheck tidak terdaftar");
         afkCheck.setExecutor(new AfkCheckCommand(this, afkManager));
 
+        PluginCommand afkStats = Objects.requireNonNull(getCommand("afkstats"), "Command /afkstats tidak terdaftar");
+        afkStats.setExecutor(new AfkStatsCommand(this, statsManager));
+
+        PluginCommand afkTop = Objects.requireNonNull(getCommand("afktop"), "Command /afktop tidak terdaftar");
+        AfkTopCommand topExecutor = new AfkTopCommand(this, statsManager);
+        afkTop.setExecutor(topExecutor);
+        afkTop.setTabCompleter(topExecutor);
+
         PluginCommand admin = Objects.requireNonNull(getCommand("menkiafk"), "Command /menkiafk tidak terdaftar");
-        MenkiAfkCommand adminExecutor = new MenkiAfkCommand(this, afkManager);
+        MenkiAfkCommand adminExecutor = new MenkiAfkCommand(this, afkManager, statsManager);
         admin.setExecutor(adminExecutor);
         admin.setTabCompleter(adminExecutor);
     }
@@ -69,12 +89,12 @@ public final class MenkiAfkPlugin extends JavaPlugin {
             // Reflection keeps PlaceholderAPI truly optional: its classes are never resolved when PAPI is absent.
             Class<?> expansionClass = Class.forName("store.menkiestes.menkiafk.placeholder.MenkiAfkExpansion");
             Object expansion = expansionClass
-                    .getConstructor(MenkiAfkPlugin.class, AfkManager.class)
-                    .newInstance(this, afkManager);
+                    .getConstructor(MenkiAfkPlugin.class, AfkManager.class, StatsManager.class)
+                    .newInstance(this, afkManager, statsManager);
             Object registered = expansionClass.getMethod("register").invoke(expansion);
             placeholderApiHooked = Boolean.TRUE.equals(registered);
             getLogger().info(placeholderApiHooked
-                    ? "PlaceholderAPI hook aktif: %menkiafk_status%, %menkiafk_reason%, %menkiafk_time%, %menkiafk_type%"
+                    ? "PlaceholderAPI hook aktif untuk status AFK dan statistik."
                     : "PlaceholderAPI ditemukan tetapi expansion MENKIAFK gagal diregistrasi.");
         } catch (Throwable throwable) {
             placeholderApiHooked = false;
@@ -89,9 +109,18 @@ public final class MenkiAfkPlugin extends JavaPlugin {
         autoAfkTask = getServer().getScheduler().runTaskTimer(this, afkManager::checkAutoAfk, ticks, ticks);
     }
 
+    private void restartStatsSaveTask() {
+        if (statsSaveTask != null) statsSaveTask.cancel();
+        long intervalSeconds = Math.max(30L, getConfig().getLong("stats.autosave-seconds", 300L));
+        long ticks = intervalSeconds * 20L;
+        statsSaveTask = getServer().getScheduler().runTaskTimer(this, statsManager::saveIfNeeded, ticks, ticks);
+    }
+
     public void reloadPluginConfig() {
         reloadConfig();
+        statsManager.reloadSettings();
         restartAutoAfkTask();
+        restartStatsSaveTask();
     }
 
     public boolean isPlaceholderApiHooked() {
