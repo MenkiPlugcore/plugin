@@ -1,5 +1,5 @@
 # ==========================================================
-# MENKIAFK v1.3.0 Universal - MENKIESTES
+# MENKIAFK v1.4.0 Universal - MENKIESTES
 # Paper 1.21.11 -> 26.2 | Spigot 1.21.11 | bytecode Java 21
 # ==========================================================
 
@@ -7,6 +7,10 @@ prefix: "&8[&6AFK&8]"
 
 # Manual AFK
 manual-afk:
+  # false = /afk tanpa alasan memakai default-reason.
+  # true = behavior klasik, player wajib menulis alasan.
+  require-reason: false
+  default-reason: "Sedang tidak tersedia"
   max-reason-length: 80
   cooldown-seconds: 8
   # Paksa /afk MENKIAFK walau EssentialsX juga mendaftarkan /afk.
@@ -33,6 +37,7 @@ return-on:
   teleport: false
 
 # Broadcast dibuat satu baris supaya tidak memenuhi chat.
+# Player dengan permission menki.afk.silent tidak memicu broadcast AFK/return.
 broadcast:
   on-afk: true
   on-return: true
@@ -78,6 +83,7 @@ placeholder:
   no-reason-text: "-"
   manual-text: "Manual"
   auto-text: "Otomatis"
+  never-afk-text: "Belum pernah"
 
 messages:
   no-permission: "{@prefix} &cKamu tidak punya izin untuk menggunakan fitur ini."
@@ -120,6 +126,8 @@ messages:
   # Hanya muncul jika ada session dari v1.2.0 yang belum memiliki klasifikasi Manual/Auto.
   stats-legacy: "&7Legacy v1.2: &f%sessions% &7sesi"
   stats-longest: "&7Sesi terlama: &f%time%"
+  stats-last: "&7Terakhir AFK: &f%time% lalu"
+  stats-last-never: "&7Terakhir AFK: &fBelum pernah"
   stats-reset: "{@prefix} &aStatistik AFK &f%player% &atelah direset."
 
   leaderboard-header: "&8&m--------------------------------"
