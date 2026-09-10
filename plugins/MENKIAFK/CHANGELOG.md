@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.1 Universal — Stability Patch
+
+- Hardened async chat handling so a delayed main-thread continuation cannot update AFK state after the player has disconnected.
+- Fixed external namespaced AFK commands such as `/essentials:afk` being incorrectly treated as MENKIAFK's own toggle for activity handling.
+- Added crash-safer `stats.yml` writes using a sibling temporary file plus atomic replace when supported by the filesystem.
+- Added corrupt YAML protection: unreadable `stats.yml` is quarantined instead of being silently overwritten; if quarantine fails, writes are blocked for that server session to protect the original file.
+- Added safe normalization for inconsistent session counters and longest-session values loaded from `stats.yml`.
+- Added `Stats I/O: OK/BLOCKED` to `/menkiafk status` for storage diagnostics.
+- `/menkiafk reload` now checkpoints statistics before applying new timezone/retention/autosave settings.
+- Shutdown logging no longer claims statistics were saved when persistence had been blocked for data protection.
+- No feature expansion, new scheduler, database, GUI, packet library, NMS access, economy dependency, or server-specific integration was added.
+- Preserved `stats.yml` schema v3 and backward compatibility with v1.2.0/v1.3.0/v1.4.0 data.
+- Preserved the Paper 1.21.11 -> 26.2 universal compatibility target and Java 21 bytecode baseline.
+
 ## 1.4.0 Universal — Utility & Configuration Update
 
 - Added `manual-afk.require-reason` to make manual AFK reasons optional or required.
