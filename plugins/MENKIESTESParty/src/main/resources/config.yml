@@ -100,7 +100,6 @@ modules:
 gui:
   progression:
     enabled: true
-    # Panjang visual progress bar di lore GUI. Range efektif 5-40.
     progress-bar-width: 20
     confirmations:
       project-cancel: true
@@ -110,7 +109,6 @@ gui:
   interaction:
     enabled: true
     progress-bar-width: 20
-    # Preset goal saat membuat Contract melalui GUI. Tetap di-clamp ke min/max Contract.
     contract-goals:
       - 50
       - 100
@@ -146,8 +144,6 @@ progression:
         goal: 1500
         party-xp: 250
 
-  # Party mendapatkan 1 Skill Point setiap naik 1 level setelah Level 1.
-  # Satu node = satu Skill Point. Node dapat dibuat/diubah lewat config.
   skill-tree:
     points-per-level: 1
     nodes:
@@ -194,7 +190,6 @@ progression:
         effects:
           project-xp-bonus-percent: 20
 
-  # Division bersifat optional dan tidak mengganti role Owner/Officer/Member.
   divisions:
     allow-self-select: true
     types:
@@ -211,7 +206,6 @@ progression:
         effects:
           all-project-progress-bonus-percent: 3
 
-  # Identity tidak dapat dipilih manual. Aktivitas 30 hari terakhir membentuknya.
   identity:
     window-days: 30
     min-activity: 50
@@ -226,13 +220,8 @@ progression:
       PROJECT_FOCUSED: 'Project Focused'
       BALANCED: 'Balanced'
 
-# ---------------------------------------------------------------------------
-# v1.3.x - Party Interaction
-# Data runtime disimpan terpisah di interactions.yml.
-# ---------------------------------------------------------------------------
 interaction:
   contracts:
-    # Type built-in: mining, hunter, farmer.
     min-goal: 10
     max-goal: 10000
     max-open-per-party: 3
@@ -243,12 +232,7 @@ interaction:
     history-retention-days: 30
     placed-block-memory-cap: 5000
     allow-rival-parties: false
-
-    # Default 0 untuk mencegah dua Party/alt Party farming XP gratis.
-    # Server owner boleh mengaktifkan reward ini jika memang diinginkan.
     party-xp-reward: 0
-
-    # Trust Score berada pada range -100 sampai +100.
     trust-on-complete: 5
     trust-on-fail: 2
 
@@ -256,18 +240,11 @@ interaction:
     request-expire-hours: 24
 
   applications:
-    # OPEN = /party apply langsung join jika slot tersedia.
-    # APPLICATION = menunggu Owner/Officer accept.
-    # CLOSED = tidak menerima pemain.
     default-recruitment-mode: APPLICATION
     expire-hours: 48
     max-active-per-player: 3
     max-note-length: 80
 
-# Configurable capability untuk fitur Interaction v1.3.
-# OWNER selalu diizinkan agar Party tidak dapat terkunci karena salah config.
-# OFFICER dan MEMBER bisa diubah bebas oleh server owner.
-# Wildcard didukung, contoh: contracts.* atau *
 rank-permissions:
   enabled: true
   officer:
@@ -277,3 +254,28 @@ rank-permissions:
     - recruitment.manage
     - applications.manage
   member: []
+
+# ---------------------------------------------------------------------------
+# v1.3.2 - Interaction Stability & UX
+# Queue dibatasi dan dipruning otomatis agar interactions.yml tetap ringan.
+# ---------------------------------------------------------------------------
+stability:
+  enabled: true
+
+  notifications:
+    max-per-player: 30
+    retention-days: 14
+    join-summary: true
+
+  activity:
+    # Recent Activity adalah feed pendek, bukan Legacy/history permanen.
+    max-per-party: 30
+    retention-days: 7
+
+  anti-spam:
+    command-action-ms: 750
+
+  integrity:
+    # Hanya repair yang tidak ambigu: orphan player index/application/diplomacy.
+    safe-repair-on-startup: true
+    safe-repair-periodic: true
