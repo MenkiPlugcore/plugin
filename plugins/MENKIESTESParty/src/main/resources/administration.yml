@@ -1,0 +1,26 @@
+# MENKIESTESParty v1.6.0 - Administration & Moderation
+# Staff tooling is command/GUI driven and has no periodic heavy scan.
+administration:
+  enabled: true
+
+  # Dangerous actions (transfer/reset/disband) require /partyadmin confirm.
+  confirmation-seconds: 30
+
+  gui:
+    enabled: true
+
+  audit:
+    # Stored inside interactions.yml under moderation.audit.
+    max-entries: 500
+    retention-days: 90
+
+  freeze:
+    # Freeze is reversible. The previous recruitment mode is restored on unfreeze.
+    block-roster: true
+    block-interactions: true
+    block-progression-management: false
+    force-recruitment-closed: true
+
+  forcejoin:
+    # Keep normal Party slot limits even for staff unless explicitly changed.
+    allow-over-cap: false
