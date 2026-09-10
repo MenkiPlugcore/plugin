@@ -3,9 +3,12 @@ package store.menkiestes.menkiafk;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import store.menkiestes.menkiafk.afk.AfkManager;
+import store.menkiestes.menkiafk.api.MenkiAfkAPI;
+import store.menkiestes.menkiafk.api.internal.MenkiAfkApiImpl;
 import store.menkiestes.menkiafk.command.AfkCheckCommand;
 import store.menkiestes.menkiafk.command.AfkCommand;
 import store.menkiestes.menkiafk.command.AfkListCommand;
@@ -22,6 +25,7 @@ import java.util.Objects;
 public final class MenkiAfkPlugin extends JavaPlugin {
     private AfkManager afkManager;
     private StatsManager statsManager;
+    private MenkiAfkAPI publicApi;
     private BukkitTask autoAfkTask;
     private BukkitTask statsSaveTask;
     private boolean placeholderApiHooked;
@@ -31,6 +35,8 @@ public final class MenkiAfkPlugin extends JavaPlugin {
         saveDefaultConfig();
         statsManager = new StatsManager(this);
         afkManager = new AfkManager(this, statsManager);
+        publicApi = new MenkiAfkApiImpl(afkManager, statsManager);
+        getServer().getServicesManager().register(MenkiAfkAPI.class, publicApi, this, ServicePriority.Normal);
 
         registerCommands();
         getServer().getPluginManager().registerEvents(new AfkCommandOverrideListener(this), this);
@@ -47,11 +53,13 @@ public final class MenkiAfkPlugin extends JavaPlugin {
 
         getLogger().info("MENKIAFK v" + getDescription().getVersion()
                 + " aktif. Universal API baseline: 1.21.11 | Java bytecode: 21"
-                + " | AFK sessions: RAM | Persistent stats: stats.yml.");
+                + " | AFK sessions: RAM | Persistent stats: stats.yml | Public API: registered.");
     }
 
     @Override
     public void onDisable() {
+        getServer().getServicesManager().unregisterAll(this);
+        publicApi = null;
         if (autoAfkTask != null) autoAfkTask.cancel();
         if (statsSaveTask != null) statsSaveTask.cancel();
         if (afkManager != null) afkManager.shutdown();
@@ -129,6 +137,12 @@ public final class MenkiAfkPlugin extends JavaPlugin {
         statsManager.reloadSettings();
         restartAutoAfkTask();
         restartStatsSaveTask();
+    }
+
+    public MenkiAfkAPI getApi() {
+        MenkiAfkAPI api = publicApi;
+        if (api == null) throw new IllegalStateException("MENKIAFK public API is not available while the plugin is disabled.");
+        return api;
     }
 
     public boolean isPlaceholderApiHooked() {
