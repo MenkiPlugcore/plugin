@@ -55,7 +55,6 @@ public final class MenkiAfkExpansion extends PlaceholderExpansion {
             case "stats_total" -> Text.duration(stats.totalMillis());
             case "stats_sessions" -> String.valueOf(stats.sessions());
             case "stats_longest" -> Text.duration(stats.longestMillis());
-            case "rank_total" -> String.valueOf(statsManager.rank(player.getUniqueId(), StatsManager.Metric.TOTAL));
             default -> null;
         };
     }
