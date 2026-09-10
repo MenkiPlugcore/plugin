@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.6.0 Universal — Production Stable
+
+- Promoted MENKIAFK from the v1.5.1 candidate channel to the stable release channel.
+- Feature freeze preserved: no new gameplay feature, runtime scheduler, listener, database, GUI, packet library, NMS access, economy dependency, or server-specific integration.
+- Preserved public API v1 without breaking changes.
+- Preserved commands, permissions, PlaceholderAPI identifiers, default behavior, and `stats.yml` schema version 3.
+- Preserved backward compatibility with existing v1.2.0-v1.5.1 configuration/statistics data.
+- Retained Java 21 and Java 25 CI regression coverage.
+- Retained final JAR verification for embedded metadata, required API classes, Java 21 classfile baseline, provided-dependency exclusion, and NMS/CraftBukkit rejection.
+- Stable-channel releases are published as normal GitHub releases and marked Latest.
+- Release metadata tests now reject stale production-candidate labeling in `plugin.yml`.
+- Live deployment smoke testing remains recommended for each operator's real Paper/plugin stack; automated validation does not claim to reproduce a specific production server environment.
+
 ## 1.5.1 Universal — Production Candidate
 
 - Feature freeze: no new gameplay feature, scheduler, database, GUI, packet library, NMS access, economy dependency, or server-specific integration.
@@ -11,7 +24,7 @@
 - Added checks preventing Bukkit/Paper and PlaceholderAPI provided dependencies from being bundled into the production JAR.
 - Added `jdeps` verification to reject NMS/CraftBukkit bytecode dependencies.
 - Added explicit Maven release channel metadata. `candidate` releases are published as GitHub Prereleases instead of Latest stable.
-- Added `PRODUCTION-CANDIDATE.md` with the remaining live Paper smoke-test checklist required before v1.6.0 Production Stable.
+- Added `PRODUCTION-CANDIDATE.md` with a live Paper smoke-test checklist.
 - Preserved public API v1, commands, permissions, placeholders, config behavior, and `stats.yml` schema version 3.
 - Existing v1.2.0-v1.5.0 configuration/statistics data remains compatible.
 

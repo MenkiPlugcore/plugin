@@ -1,6 +1,6 @@
 # MENKIAFK Public API v1
 
-MENKIAFK v1.5.0 introduced the read-only Bukkit API. v1.5.1 Production Candidate preserves the same public contract and adds CI regression tests that lock the v1 method/event surface before v1.6.0 Production Stable.
+MENKIAFK v1.5.0 introduced the read-only Bukkit API, v1.5.1 added regression gates for that contract, and v1.6.0 promotes the same API surface to the Production Stable line.
 
 ## Runtime dependency
 
@@ -103,7 +103,7 @@ Lifecycle events are informational and intentionally not cancellable. MENKIAFK d
 
 ## Public types
 
-Public API v1 compatibility surface:
+Stable API v1 compatibility surface:
 
 - `store.menkiestes.menkiafk.api.MenkiAfkAPI`
 - `store.menkiestes.menkiafk.api.AfkSessionSnapshot`
@@ -114,8 +114,8 @@ Public API v1 compatibility surface:
 
 Classes under `store.menkiestes.menkiafk.api.internal` are implementation details and are not part of the compatibility contract.
 
-## v1.5.1 API candidate guarantee
+## v1 stable contract
 
-The production-candidate CI directly verifies that the v1 query methods remain available, `MANUAL`/`AUTO` enum values remain present, lifecycle events remain non-cancellable, and all required public API classes are packaged in the final release JAR.
+The CI directly verifies that the v1 query methods remain available, `MANUAL`/`AUTO` enum values remain present, lifecycle events remain non-cancellable, and all required public API classes are packaged in the final release JAR.
 
-This is a compatibility guard, not a runtime mutation API. The v1 API remains intentionally read-only: it does not expose force-AFK, force-return, mutable internal sessions, YAML objects, or internal managers.
+The v1 API remains intentionally read-only. It does not expose force-AFK, force-return, mutable internal sessions, YAML objects, or internal managers. Breaking public API changes should be reserved for a future major version.

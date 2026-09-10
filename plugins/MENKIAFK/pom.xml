@@ -6,9 +6,9 @@
 
     <groupId>store.menkiestes</groupId>
     <artifactId>menkiafk</artifactId>
-    <version>1.5.1</version>
+    <version>1.6.0</version>
     <name>MENKIAFK</name>
-    <description>Universal lightweight standalone AFK system with persistent stats, leaderboards, utility configuration, stability hardening, a public read-only API, and production-candidate quality gates (Paper 1.21.11-26.2).</description>
+    <description>Universal lightweight standalone AFK system with persistent stats, leaderboards, utility configuration, stability hardening, a stable public read-only API, and production release quality gates (Paper 1.21.11-26.2).</description>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
@@ -16,7 +16,7 @@
         <paper.version>1.21.11-R0.1-SNAPSHOT</paper.version>
         <placeholderapi.version>2.12.0</placeholderapi.version>
         <junit.version>5.11.4</junit.version>
-        <menkiafk.release.channel>candidate</menkiafk.release.channel>
+        <menkiafk.release.channel>stable</menkiafk.release.channel>
     </properties>
 
     <repositories>
