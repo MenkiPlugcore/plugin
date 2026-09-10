@@ -45,6 +45,8 @@ public final class ActivityListener implements Listener {
         Player player = event.getPlayer();
         String message = event.getMessage();
         plugin.getServer().getScheduler().runTask(plugin, () -> {
+            // Async chat can race with disconnect. Never revive/update runtime state for an offline player.
+            if (!player.isOnline()) return;
             if (plugin.getConfig().getBoolean("return-on.chat", true)) activity(player);
             manager.handleMentions(player, message);
         });
@@ -54,10 +56,10 @@ public final class ActivityListener implements Listener {
     public void onCommand(PlayerCommandPreprocessEvent event) {
         String raw = event.getMessage();
         String first = raw.length() > 1 ? raw.substring(1).split("\\s+", 2)[0].toLowerCase(Locale.ROOT) : "";
-        int namespace = first.indexOf(':');
-        String normalized = namespace >= 0 && namespace + 1 < first.length() ? first.substring(namespace + 1) : first;
-        // /afk is a toggle and must not be auto-returned before its executor runs.
-        if (normalized.equals("afk")) return;
+
+        // Only MENKIAFK's own toggle must bypass activity handling before its executor runs.
+        // External namespaced commands such as /essentials:afk remain untouched and count as activity.
+        if (first.equals("afk") || first.equals("menkiafk:afk")) return;
 
         manager.handlePrivateMessage(event.getPlayer(), raw);
         if (plugin.getConfig().getBoolean("return-on.command", true)) activity(event.getPlayer());
@@ -86,6 +88,7 @@ public final class ActivityListener implements Listener {
     }
 
     private void activity(Player player) {
+        if (!player.isOnline()) return;
         if (manager.isAfk(player.getUniqueId())) manager.returnFromAfk(player, true);
         else manager.touchThrottled(player, 750L);
     }
