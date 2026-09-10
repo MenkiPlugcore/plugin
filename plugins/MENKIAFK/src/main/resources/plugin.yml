@@ -1,9 +1,9 @@
 name: MENKIAFK
-version: '1.5.1'
+version: '1.6.0'
 main: store.menkiestes.menkiafk.MenkiAfkPlugin
 api-version: '1.21.11'
 author: MENKIESTES
-description: Universal lightweight standalone AFK system with persistent stats, leaderboards, utility configuration, stability hardening, a public read-only API, and production-candidate verification.
+description: Universal lightweight standalone AFK system with persistent stats, leaderboards, utility configuration, stability hardening, a stable public read-only API, and production release verification.
 softdepend: [PlaceholderAPI, Essentials]
 
 commands:
