@@ -16,6 +16,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private InteractionManager interactions;
     private InteractionGui interactionGui;
     private PartyStabilityManager stability;
+    private AdministrationManager administration;
     private DeveloperApiManager developerApi;
     private ApiHardeningManager apiHardening;
     private WarManager war;
@@ -31,13 +32,13 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.schedulerCompat = new SchedulerCompat(this);
 
         if (!schedulerCompat.runtimeAllowed()) {
-            getLogger().severe("Folia detected. MENKIESTESParty v1.5.1 blocks Folia by default because full region-thread safety is not certified yet.");
+            getLogger().severe("Folia detected. MENKIESTESParty v1.6.0 blocks Folia by default because full region-thread safety is not certified yet.");
             getLogger().severe("Use compatibility.folia.experimental=true only for controlled testing. Core data was not loaded.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (schedulerCompat.foliaDetected()) {
-            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.5.1.");
+            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.6.0.");
         }
 
         try {
@@ -56,6 +57,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         // this component only owns Daily Party Missions and legacy no-op methods.
         this.hall = new RewardHallManager(this, parties, storage);
         this.interactions = new InteractionManager(this, parties, storage);
+        this.administration = new AdministrationManager(this, parties, progression, interactions, storage);
         this.interactionGui = new InteractionGui(this, parties, storage, interactions);
         this.stability = new PartyStabilityManager(this, parties, storage, interactions);
         this.developerApi = new DeveloperApiManager(this, parties, progression, interactions, storage);
@@ -76,6 +78,9 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             storageCommand.setTabCompleter(storageAdmin);
         }
 
+        // Administration is registered before gameplay/GUI listeners so a freeze
+        // can fail closed before stale interaction buttons or commands mutate data.
+        Bukkit.getPluginManager().registerEvents(administration, this);
         Bukkit.getPluginManager().registerEvents(new PartyListener(this, parties, war), this);
         Bukkit.getPluginManager().registerEvents(progression, this);
         Bukkit.getPluginManager().registerEvents(interactions, this);
@@ -142,6 +147,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
                 + ", applications=" + interactions.moduleEnabled("applications")
                 + ", interaction-gui=" + interactionGui.enabled()
                 + ", stability=" + stability.enabled()
+                + ". Administration: enabled=" + administration.enabled()
                 + ". Developer: api=" + developerApi.enabled()
                 + ", api-health=" + apiHardening.healthLabel()
                 + ", vault=" + developerApi.integrationAvailable("vault"));
@@ -227,6 +233,12 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().set(storageHardeningMarker, true);
             getLogger().info("Config migration: v1.5.1 storage hardening marker applied.");
         }
+
+        String administrationMarker = "migrations.administration-v1_6_0";
+        if (!getConfig().getBoolean(administrationMarker, false)) {
+            getConfig().set(administrationMarker, true);
+            getLogger().info("Config migration: v1.6.0 Administration & Moderation marker applied.");
+        }
         saveConfig();
     }
 
@@ -263,6 +275,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public InteractionManager interactions() { return interactions; }
     public InteractionGui interactionGui() { return interactionGui; }
     public PartyStabilityManager stability() { return stability; }
+    public AdministrationManager administration() { return administration; }
     public DeveloperApiManager developerApi() { return developerApi; }
     public ApiHardeningManager apiHardening() { return apiHardening; }
     public WarManager war() { return war; }
@@ -273,6 +286,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public void reloadPluginConfig() {
         reloadConfig();
         if (messages != null) messages.reload();
+        if (administration != null) administration.reloadSettings();
         if (apiHardening != null) apiHardening.verifyCompatibility();
     }
 }
