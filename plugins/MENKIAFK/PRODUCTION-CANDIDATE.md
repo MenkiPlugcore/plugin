@@ -1,6 +1,8 @@
-# MENKIAFK v1.5.1 — Production Candidate Checklist
+# MENKIAFK — Production Candidate / Deployment Smoke Checklist
 
-v1.5.1 is the final candidate stage before v1.6.0 Production Stable. Feature development is frozen during this stage.
+This checklist was introduced for v1.5.1 and remains the recommended deployment validation checklist for the v1.6.x Production Stable line.
+
+The repository's automated release gates validate compilation, API contract, packaging, bytecode baseline, and forbidden dependency usage. They do **not** reproduce every operator's real Paper server, plugin stack, filesystem, permissions, or proxy environment. Run the live checks below on a backup/staging server before replacing a critical production deployment.
 
 ## Automated gates
 
@@ -13,16 +15,16 @@ These checks run in GitHub Actions before the release job:
 - legacy-session accounting check
 - lifecycle events remain non-cancellable
 - `plugin.yml` metadata/version/API baseline checks
-- default `config.yml` production-candidate metadata check
+- default `config.yml` metadata check
 - required public API classes exist in the built JAR
 - classfile baseline is Java 21 / major version 65
 - Bukkit/Paper and PlaceholderAPI provided dependencies are not bundled into the JAR
 - `jdeps` output contains no NMS or CraftBukkit dependency
 - release channel is explicitly `candidate` or `stable`
 
-## Manual live Paper smoke test required before v1.6.0
+## Recommended live Paper smoke test
 
-Use a backup/copy of a real server, not the primary production instance for the first pass.
+Use a backup/copy of a real server for the first deployment pass.
 
 - Fresh install on Paper 1.21.11 + Java 21
 - Startup with PlaceholderAPI absent
@@ -55,21 +57,21 @@ Use a backup/copy of a real server, not the primary production instance for the 
 - `/menkiafk status` reports `Stats I/O: OK` on healthy storage
 - Corrupt `stats.yml` is quarantined instead of silently overwritten
 - Newer unsupported schema blocks writes during downgrade protection
-- Upgrade using an existing v1.2.0/v1.3.0/v1.4.x/v1.5.0 `stats.yml`
+- Upgrade using an existing v1.2.0-v1.5.x `stats.yml`
 - Public `MenkiAfkAPI` service is discoverable by a small consumer plugin
 - `PlayerEnterAfkEvent` fires after state is committed
 - `PlayerLeaveAfkEvent` fires after normal return/quit/kick
 - No leave event is expected during plugin/server disable
 - Paper 26.2 + Java 25 smoke pass using the same JAR
 
-## Promotion rule
+## Stable deployment rule
 
-Promote to v1.6.0 Production Stable only when:
+For an individual production server, deploy v1.6.x after:
 
-1. all automated candidate gates are green,
-2. the live Paper smoke-test checklist has no release-blocking failure,
-3. no public API v1 breaking change is required,
-4. `stats.yml` schema can remain backward compatible,
-5. no new feature is added during the candidate period.
+1. repository automated gates are green,
+2. the server-specific staging/smoke pass has no release-blocking failure,
+3. only one MENKIAFK JAR is present,
+4. `plugins/MENKIAFK/` has been backed up,
+5. `/menkiafk status` reports healthy statistics I/O after startup.
 
-If a candidate bug is found, fix it as v1.5.2 (or another 1.5.x candidate patch) and repeat the checklist instead of shipping the bug into v1.6.0.
+If a stable-line bug is found, patch it in v1.6.x without breaking public API v1 or `stats.yml` schema compatibility unless a future major release explicitly requires that change.
