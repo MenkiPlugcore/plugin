@@ -9,6 +9,9 @@ public final class RuntimeCompatibilityProbe {
         if (javaFeature < 21) throw new IllegalStateException("Java 21+ required, got " + javaFeature);
         Class.forName("org.sqlite.JDBC");
         Class.forName("com.mysql.cj.jdbc.Driver");
-        System.out.println("MENKIESTESParty runtime probe OK on Java " + javaFeature);
+        Class.forName("id.cadera.menkiestesparty.api.v2.MenkiPartyAPIv2");
+        Class.forName("id.cadera.menkiestesparty.architecture.StorageDocumentSchema");
+        Class.forName("id.cadera.menkiestesparty.architecture.NetworkEnvelope");
+        System.out.println("MENKIESTESParty architecture-v2 runtime probe OK on Java " + javaFeature);
     }
 }

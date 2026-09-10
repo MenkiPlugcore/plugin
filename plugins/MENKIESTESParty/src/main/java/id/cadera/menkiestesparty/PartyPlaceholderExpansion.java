@@ -14,10 +14,18 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
     @Override public boolean persist(){return true;}
 
     @Override public @Nullable String onRequest(OfflinePlayer player, @NotNull String identifier) {
+        // Keep api_version on the original v1 contract for existing configs.
         if(identifier.equalsIgnoreCase("api_version"))return plugin.developerApi().apiVersion();
+        if(identifier.equalsIgnoreCase("api_v1_version"))return plugin.developerApi().apiVersion();
+        if(identifier.equalsIgnoreCase("api_v2_version"))return plugin.developerApiV2().apiVersion();
         if(identifier.equalsIgnoreCase("plugin_version"))return plugin.getDescription().getVersion();
         if(identifier.equalsIgnoreCase("api_health"))return plugin.apiHardening().healthLabel();
         if(identifier.equalsIgnoreCase("vault_available"))return plugin.developerApi().integrationAvailable("vault")?"true":"false";
+        if(identifier.equalsIgnoreCase("document_schema"))return String.valueOf(plugin.architecture().documentSchemaVersion());
+        if(identifier.equalsIgnoreCase("storage_protocol"))return String.valueOf(plugin.storage().schemaVersion());
+        if(identifier.equalsIgnoreCase("node_id"))return plugin.architecture().nodeId();
+        if(identifier.equalsIgnoreCase("network_mode"))return plugin.architecture().activeNetworkMode();
+        if(identifier.equalsIgnoreCase("network_distributed"))return plugin.architecture().distributedTransport()?"true":"false";
         if(player==null)return "";
         String party=plugin.parties().partyOf(player.getUniqueId());
         if(identifier.equalsIgnoreCase("name"))return party==null?"None":plugin.parties().display(party);
@@ -36,6 +44,7 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
             if(party==null)return "0";
             return String.valueOf(plugin.developerApi().party(party).map(id.cadera.menkiestesparty.api.MenkiPartyAPI.PartySnapshot::onlineMembers).orElse(0));
         }
+        if(identifier.equalsIgnoreCase("party_revision"))return party==null?"0":String.valueOf(plugin.architecture().revision(party));
         if(identifier.equalsIgnoreCase("quest_mining"))return party==null?"0/0":plugin.parties().questProgress(party,"mining")+"/"+plugin.parties().questGoal("mining");
         if(identifier.equalsIgnoreCase("quest_hunter"))return party==null?"0/0":plugin.parties().questProgress(party,"hunter")+"/"+plugin.parties().questGoal("hunter");
         if(identifier.equalsIgnoreCase("quest_farmer"))return party==null?"0/0":plugin.parties().questProgress(party,"farmer")+"/"+plugin.parties().questGoal("farmer");
@@ -73,9 +82,7 @@ public final class PartyPlaceholderExpansion extends PlaceholderExpansion {
         if(identifier.equalsIgnoreCase("applications_pending"))return party==null?"0":String.valueOf(plugin.interactions().pendingApplicationCount(party));
         if(identifier.equalsIgnoreCase("inbox_unread"))return String.valueOf(plugin.stability().unreadCount(player.getUniqueId()));
 
-        // v1.7.0 - player-facing Social & Party Identity placeholders.
-        // These always describe the requesting player's own Party, so a PRIVATE
-        // profile is not leaked to an unrelated PlaceholderAPI request target.
+        // v1.7+ player-facing Social & Party Identity placeholders.
         if(identifier.equalsIgnoreCase("social_tag"))return party==null?"":plugin.socialIdentity().tag(party);
         if(identifier.equalsIgnoreCase("social_description"))return party==null?"":plugin.socialIdentity().description(party);
         if(identifier.equalsIgnoreCase("social_color"))return party==null?"AQUA":plugin.socialIdentity().colorName(party);

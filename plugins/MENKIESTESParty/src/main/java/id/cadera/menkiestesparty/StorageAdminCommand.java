@@ -51,6 +51,9 @@ public final class StorageAdminCommand implements CommandExecutor, TabCompleter 
         plugin.messages().send(sender, "storage.configured", Map.of("backend", storage.configuredBackend()));
         plugin.messages().send(sender, "storage.active", Map.of("backend", storage.activeBackend()));
         plugin.messages().send(sender, "storage.schema", Map.of("version", storage.schemaVersion()));
+        plugin.messages().send(sender, "storage.document-schema", Map.of(
+                "version", plugin.architecture().documentSchemaVersion(),
+                "state", plugin.architecture().schemaState()));
         plugin.messages().send(sender, "storage.async", Map.of("value", storage.asyncWrites()));
         plugin.messages().send(sender, "storage.degraded", Map.of("value", storage.degraded()));
         plugin.messages().send(sender, "storage.pending", Map.of(

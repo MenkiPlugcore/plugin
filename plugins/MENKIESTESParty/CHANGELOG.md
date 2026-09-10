@@ -2,6 +2,37 @@
 
 All notable MENKIESTESParty changes are documented here. Releases remain standalone/public-plugin oriented and preserve the custom MENKIESTES/CADERA project licensing while respecting bundled third-party notices.
 
+## 2.0.0 - 2026-09-10
+
+Major Architecture Release.
+
+### Added
+
+- Document Schema v2 with additive reserved metadata for all five logical Party documents.
+- Automatic v1 -> v2 document migration with `pre-schema-v2-*` YAML snapshot and SHA-256 manifest.
+- `architecture.yml` and generated `architecture-state.yml`.
+- Stable node identity and `LOCAL` zero-I/O network transport boundary.
+- Event-driven Party revision envelopes without a new polling scheduler.
+- Persisted monotonic Party revision counters plus one bounded last-envelope summary.
+- `/partyarchitecture status|verify|reload` diagnostics.
+- Additive `MenkiPartyAPIv2.API_VERSION = "2.0"` while retaining API v1.0.
+- API v2 Runtime, Social Profile and richer Member/Party snapshots.
+- Architecture/API v2 PlaceholderAPI values and pure-Java regression contracts.
+- `ARCHITECTURE.md` and `API_V2.md`.
+
+### Compatibility / Performance
+
+- Existing `MenkiPartyAPI.API_VERSION = "1.0"` remains registered for compatible consumers.
+- Storage backend protocol/table format stays v1; YAML/SQLite/MySQL do not require a database-table migration.
+- Existing Party/progression/social/admin/interaction paths are preserved by Document Schema v2.
+- YAML remains the default backend; SQLite/MySQL remain optional.
+- `LOCAL` performs no external network I/O; Redis/proxy dependencies are not bundled.
+- Cross-server Party state replication is not claimed in v2.0.0.
+- No architecture/network polling scheduler or unbounded event-history queue is introduced.
+- Existing storage failover, admin exactly-once safety and social/Dynamic Identity behavior remain.
+- Folia remains experimental and is not production-certified in v2.0.0.
+- Java 21 build, MySQL 8.4 integration, Java 25 runtime probe and automatic GitHub Release remain production gates.
+
 ## 1.7.0 - 2026-09-10
 
 Social & Party Identity Update.

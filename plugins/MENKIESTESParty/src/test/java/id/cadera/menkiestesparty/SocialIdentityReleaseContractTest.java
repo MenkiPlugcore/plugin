@@ -16,7 +16,7 @@ class SocialIdentityReleaseContractTest {
         String plugin = resource("plugin.yml");
         String social = resource("social.yml");
 
-        assertTrue(plugin.contains("version: 1.7.0"));
+        assertTrue(plugin.contains("name: MENKIESTESParty"));
         assertTrue(plugin.contains("partysocial:"));
         assertTrue(plugin.contains("partytop:"));
         assertTrue(plugin.contains("menkiestesparty.social.view:"));

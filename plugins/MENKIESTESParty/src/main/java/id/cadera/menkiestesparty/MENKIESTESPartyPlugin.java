@@ -1,6 +1,7 @@
 package id.cadera.menkiestesparty;
 
 import id.cadera.menkiestesparty.api.MenkiPartyAPI;
+import id.cadera.menkiestesparty.api.v2.MenkiPartyAPIv2;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.ServicePriority;
@@ -8,6 +9,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private StorageBundle storage;
+    private ArchitectureManager architecture;
     private MessageManager messages;
     private SchedulerCompat schedulerCompat;
     private PartyService parties;
@@ -21,6 +23,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private AdministrationStabilityManager administrationStability;
     private AdministrationRecoveryManager administrationRecovery;
     private DeveloperApiManager developerApi;
+    private DeveloperApiV2Manager developerApiV2;
     private ApiHardeningManager apiHardening;
     private WarManager war;
     private SeasonManager season;
@@ -35,19 +38,28 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.schedulerCompat = new SchedulerCompat(this);
 
         if (!schedulerCompat.runtimeAllowed()) {
-            getLogger().severe("Folia detected. MENKIESTESParty v1.7.0 blocks Folia by default because full region-thread safety is not certified yet.");
+            getLogger().severe("Folia detected. MENKIESTESParty v2.0.0 still blocks Folia by default because full region-thread safety is not certified yet.");
             getLogger().severe("Use compatibility.folia.experimental=true only for controlled testing. Core data was not loaded.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         if (schedulerCompat.foliaDetected()) {
-            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.7.0.");
+            getLogger().warning("Experimental Folia scheduler mode enabled. Architecture v2 is Folia-aware but full gameplay safety is not production-certified.");
         }
 
         try {
             this.storage = new StorageBundle(this);
         } catch (RuntimeException storageFailure) {
             getLogger().severe("MENKIESTESParty storage initialization failed: " + storageFailure.getMessage());
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        try {
+            this.architecture = new ArchitectureManager(this, storage);
+        } catch (RuntimeException architectureFailure) {
+            getLogger().severe("MENKIESTESParty architecture initialization failed: " + architectureFailure.getMessage());
+            try { storage.close(); } catch (Exception ignored) {}
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
@@ -69,6 +81,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.interactionGui = new InteractionGui(this, parties, storage, interactions);
         this.stability = new PartyStabilityManager(this, parties, storage, interactions);
         this.developerApi = new DeveloperApiManager(this, parties, progression, interactions, storage);
+        this.developerApiV2 = new DeveloperApiV2Manager(this, developerApi, socialIdentity, architecture, storage);
         this.apiHardening = new ApiHardeningManager(this, parties, progression, interactions, storage, developerApi);
         this.partyGui = new PartyManageGui(this, parties);
         this.progressionGui = new ProgressionGuiV122(this, parties, progression);
@@ -94,9 +107,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(administrationStability, this);
         Bukkit.getPluginManager().registerEvents(administration, this);
         Bukkit.getPluginManager().registerEvents(new PartyListener(this, parties, war), this);
-        // v1.7.0 social routing is LOWEST priority and registered before the
-        // legacy v1.2 progression listener. /party profile is therefore owned
-        // by the social layer while /party identity keeps its automatic v1.2 behavior.
+        // v1.7.0 social routing stays before the legacy v1.2 progression listener.
         Bukkit.getPluginManager().registerEvents(socialIdentity, this);
         Bukkit.getPluginManager().registerEvents(progression, this);
         Bukkit.getPluginManager().registerEvents(interactions, this);
@@ -104,6 +115,9 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(stability, this);
         Bukkit.getPluginManager().registerEvents(partyGui, this);
         Bukkit.getPluginManager().registerEvents(progressionGui, this);
+        // v2 architecture listens to the existing post-state API event stream.
+        // No additional polling scheduler is introduced.
+        Bukkit.getPluginManager().registerEvents(architecture, this);
 
         if (developerApi.enabled()) {
             Bukkit.getServicesManager().register(MenkiPartyAPI.class, developerApi, this, ServicePriority.Normal);
@@ -113,7 +127,16 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         boolean apiHealthy = apiHardening.startupCheck();
         if (developerApi.enabled() && !apiHealthy && apiHardening.failClosed()) {
             Bukkit.getServicesManager().unregister(MenkiPartyAPI.class, developerApi);
-            getLogger().severe("Public MENKIESTESParty API service unregistered by v1.4.1 fail-closed guard. Core Party remains enabled.");
+            getLogger().severe("Public MENKIESTESParty API v1 service unregistered by compatibility guard. Core Party remains enabled.");
+        }
+
+        if (developerApiV2.enabled()) {
+            if (apiHealthy && developerApiV2.verifyContract()) {
+                Bukkit.getServicesManager().register(MenkiPartyAPIv2.class, developerApiV2, this, ServicePriority.Normal);
+                getLogger().info("MENKIESTESParty API v2.0 registered alongside legacy API v1.0.");
+            } else {
+                getLogger().severe("MENKIESTESParty API v2 service was not registered because its architecture/API dependency check failed. Core Party remains enabled.");
+            }
         }
 
         schedulerCompat.runGlobalTimer(() -> {
@@ -146,12 +169,16 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         }
 
         getLogger().info("MENKIESTESParty v" + getDescription().getVersion()
-                + " enabled. Storage: schema=" + storage.schemaVersion()
+                + " enabled. Storage: document-schema=" + architecture.documentSchemaVersion()
+                + ", backend-protocol=" + storage.schemaVersion()
                 + ", configured=" + storage.configuredBackend()
                 + ", active=" + storage.activeBackend()
                 + ", async=" + storage.asyncWrites()
                 + ", degraded=" + storage.degraded()
                 + ", unclean-recovery=" + storage.uncleanShutdownDetected()
+                + ". Architecture: node=" + architecture.nodeId()
+                + ", network=" + architecture.activeNetworkMode()
+                + ", distributed=" + architecture.distributedTransport()
                 + ". Scheduler=" + schedulerCompat.mode()
                 + ". Progression: projects=" + progression.moduleEnabled("projects")
                 + ", skills=" + progression.moduleEnabled("skill-tree")
@@ -167,8 +194,9 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
                 + ". Administration: enabled=" + administration.enabled()
                 + ", safety=" + administrationStability.enabled()
                 + ", recovery-observability=" + administrationRecovery.enabled()
-                + ". Developer: api=" + developerApi.enabled()
-                + ", api-health=" + apiHardening.healthLabel()
+                + ". Developer: api-v1=" + developerApi.enabled()
+                + ", api-v1-health=" + apiHardening.healthLabel()
+                + ", api-v2=" + developerApiV2.enabled()
                 + ", vault=" + developerApi.integrationAvailable("vault"));
     }
 
@@ -271,12 +299,19 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().set(administrationObservabilityMarker, true);
             getLogger().info("Config migration: v1.6.2 Administration recovery/observability marker applied.");
         }
+
+        String architectureMarker = "migrations.architecture-v2_0_0";
+        if (!getConfig().getBoolean(architectureMarker, false)) {
+            getConfig().set(architectureMarker, true);
+            getLogger().info("Config migration: v2.0.0 architecture marker applied; runtime settings live in architecture.yml.");
+        }
         saveConfig();
     }
 
     @Override public void onDisable() {
         Bukkit.getServicesManager().unregisterAll(this);
         if (administrationStability != null) administrationStability.clearAll();
+        if (architecture != null) architecture.close();
         if (storage != null) storage.close();
         dirty = false;
     }
@@ -300,6 +335,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     }
 
     public StorageBundle storage() { return storage; }
+    public ArchitectureManager architecture() { return architecture; }
     public MessageManager messages() { return messages; }
     public SchedulerCompat schedulerCompat() { return schedulerCompat; }
     public PartyService parties() { return parties; }
@@ -313,6 +349,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public AdministrationStabilityManager administrationStability() { return administrationStability; }
     public AdministrationRecoveryManager administrationRecovery() { return administrationRecovery; }
     public DeveloperApiManager developerApi() { return developerApi; }
+    public DeveloperApiV2Manager developerApiV2() { return developerApiV2; }
     public ApiHardeningManager apiHardening() { return apiHardening; }
     public WarManager war() { return war; }
     public SeasonManager season() { return season; }
@@ -323,6 +360,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         reloadConfig();
         if (messages != null) messages.reload();
         if (socialIdentity != null) socialIdentity.reload();
+        if (architecture != null) architecture.reload();
         if (apiHardening != null) apiHardening.verifyCompatibility();
     }
 }

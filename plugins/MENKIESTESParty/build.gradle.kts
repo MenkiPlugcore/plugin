@@ -1,7 +1,7 @@
 plugins { java }
 
 group = "id.cadera"
-version = "1.7.0"
+version = "2.0.0"
 
 repositories {
     mavenCentral()

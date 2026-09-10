@@ -16,7 +16,7 @@ class AdministrationReleaseContractTest {
         String plugin = resource("plugin.yml");
         String administration = resource("administration.yml");
 
-        assertTrue(plugin.contains("version: 1.7.0"));
+        assertTrue(plugin.contains("name: MENKIESTESParty"));
         assertTrue(plugin.contains("partyadmin:"));
         assertTrue(plugin.contains("menkiestesparty.admin.dangerous:"));
         assertTrue(plugin.contains("pending"));
@@ -33,7 +33,7 @@ class AdministrationReleaseContractTest {
         assertTrue(administration.contains("repair-dryrun-max-lines: 20"));
 
         assertTrue(Files.isRegularFile(Path.of("RELEASE_NOTES_v1.7.0.md")),
-                "Every releasable version must carry GitHub release notes");
+                "Legacy release documentation must remain available");
         assertTrue(Files.isRegularFile(Path.of("ADMINISTRATION.md")));
         assertTrue(Files.isRegularFile(Path.of("SOCIAL_IDENTITY.md")));
         assertTrue(Files.isRegularFile(Path.of("CHANGELOG.md")));

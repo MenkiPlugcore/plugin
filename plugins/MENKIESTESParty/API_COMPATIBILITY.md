@@ -1,77 +1,102 @@
 # MENKIESTESParty API Compatibility Policy
 
-This document applies to the public API introduced in MENKIESTESParty v1.4.0 and hardened in v1.4.1.
-
-## Current contract
-
-- Plugin line: `1.4.x`
-- Public API: `MenkiPartyAPI.API_VERSION = "1.0"`
-- Provider discovery: Bukkit `ServicesManager`
-- State model: immutable snapshots
-- Events: post-state and non-cancellable
-
-Consumers should depend only on classes under:
+MENKIESTESParty exposes versioned public interfaces through Bukkit `ServicesManager`. Consumer plugins should depend only on public types below:
 
 ```text
 id.cadera.menkiestesparty.api
+id.cadera.menkiestesparty.api.v2
 id.cadera.menkiestesparty.api.event
 ```
 
-Internal managers, YAML paths and storage classes are not public API.
+Internal managers, YAML paths, storage classes and architecture transport implementations are not public API.
 
-## Compatibility guarantee for API v1
+## API v1 — compatibility line
 
-Within API v1, MENKIESTESParty will avoid removing or changing the signature of existing public methods and record components. Additive changes may be introduced when they remain source/binary compatible.
+The original service introduced in v1.4 remains:
 
-A future intentional breaking change must use a new API major version instead of silently changing the v1 contract.
+```text
+id.cadera.menkiestesparty.api.MenkiPartyAPI
+MenkiPartyAPI.API_VERSION = "1.0"
+```
 
-## CI contract guard
+MENKIESTESParty v2.0.0 does not remove or change the signature/record layout of this interface. Existing API v1 consumers can continue using its Bukkit service registration.
 
-`MenkiPartyApiContractTest` pins:
+Within API v1, existing public methods and record components will not intentionally be removed/reordered/retyped. A breaking change will never be silently shipped under `API_VERSION = "1.0"`.
 
-- `API_VERSION`
-- public abstract method names, parameter types and return types
-- snapshot record component order/names/types
-- defensive copy behavior of Party member lists
-- bounded Project percentage behavior
+## API v2 — current architecture API
 
-The regular Gradle `build` runs these tests. An accidental API contract change should therefore fail CI before a release artifact is accepted.
+v2.0.0 adds:
+
+```text
+id.cadera.menkiestesparty.api.v2.MenkiPartyAPIv2
+MenkiPartyAPIv2.API_VERSION = "2.0"
+```
+
+API v2 adds architecture/runtime state, richer member/social snapshots and Party revisions without changing API v1.
+
+Compatible additive changes may be made within API v2. A future intentional breaking contract must use a new API major version rather than silently changing v2 signatures.
+
+## Service coexistence
+
+API v1 and v2 are separate Bukkit services. Consumers should request the exact interface they support.
+
+API v2 registration requires the v2 architecture/document schema checks to be healthy. If API v2 is not registered, this does not intentionally disable Party gameplay or remove a healthy API v1 service.
+
+API v1 retains the hardening/fail-closed behavior introduced in v1.4.1: a failed API v1 compatibility self-check can unregister only that public service while Party core remains enabled.
+
+## Event model
+
+Existing `id.cadera.menkiestesparty.api.event` events remain post-state and non-cancellable. The event bridge observes committed Party state rather than exposing mutable YAML objects.
+
+Architecture v2 uses this same event stream for revision envelopes. It does not replace the public Bukkit events.
+
+Because the event bridge is snapshot-driven, disabling `developer.events.enabled` disables those public transition events and therefore also stops architecture revision-envelope advancement.
+
+## Reward/idempotency compatibility
+
+Developer Reward triggers continue using persistent receipt identities with durable reservation before external side effects. The v2 API provider delegates controlled mutations to the existing validated core instead of introducing a second mutation pipeline.
+
+## CI contract guards
+
+The regular Gradle build protects both major API contracts:
+
+- API v1 remains `1.0`.
+- API v2 remains `2.0`.
+- v1 public interface/records remain available.
+- v2 Party snapshot includes revision + Social Profile.
+- v2 collection snapshots are defensive copies.
+- Document Schema/network envelope pure-Java contracts are regression tested.
+- release metadata/documentation must match v2.0.0.
+
+The production JAR verifier also requires both API class files and Architecture v2 classes/resources before the artifact can advance to runtime/MySQL/release gates.
 
 ## Runtime verification
 
-Administrators can run:
+Legacy API diagnostics remain:
 
 ```text
 /partyapi status
 /partyapi verify
 ```
 
-`/partyapi verify` checks the API version, method surface, snapshot record types, event classes, Bukkit service registration and a basic API read smoke test.
+Architecture/API v2 dependencies can be checked with:
 
-With the default setting:
-
-```yaml
-developer:
-  hardening:
-    fail-closed-on-contract-error: true
+```text
+/partyarchitecture status
+/partyarchitecture verify
 ```
 
-an unhealthy public API provider is removed from Bukkit `ServicesManager`. Core Party gameplay remains enabled.
+For programmatic API v2 runtime details, use `MenkiPartyAPIv2.runtime()`.
 
-## Event de-duplication
+## Placeholder compatibility
 
-v1.4.1 fingerprints each observed state transition before firing the public Bukkit event. Identical fingerprints inside the configured de-duplication window are suppressed.
+`%mparty_api_version%` intentionally remains API v1 (`1.0`) so existing scoreboards/configs do not change meaning.
 
-```yaml
-developer:
-  hardening:
-    event-dedup-window-ms: 5000
+v2 adds explicit placeholders:
+
+```text
+%mparty_api_v1_version%
+%mparty_api_v2_version%
 ```
 
-Events remain post-state and non-cancellable.
-
-## Reward idempotency
-
-Developer Reward triggers use persistent receipt identities in `interactions.yml`. A receipt is reserved and flushed before external side effects run. This is an at-most-once strategy designed to prevent duplicate Vault deposits or console commands during abnormal reload/crash/tick conditions.
-
-Receipts can be inspected indirectly with `/partyapi status`, which shows the current receipt count. Detailed data remains an internal storage concern and should not be read by consumer plugins.
+See `API_V2.md` for the v2 surface and `ARCHITECTURE.md` for schema/network semantics.
