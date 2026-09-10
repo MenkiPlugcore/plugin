@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.3.0 Universal — Lightweight QoL Update
+
+- Added `/afklist` to show currently online AFK players with duration, type, and reason.
+- Added configurable `afk-list.max-entries` to prevent chat flooding on large servers.
+- Added `stats.minimum-session-seconds` so very short AFK toggles do not pollute persistent statistics or leaderboards.
+- Added persistent Manual vs Auto AFK session counters.
+- Added `%menkiafk_stats_manual_sessions%` and `%menkiafk_stats_auto_sessions%` PlaceholderAPI placeholders.
+- Upgraded `stats.yml` to schema version 2 while keeping v1.2.0 statistics backward compatible.
+- Existing v1.2.0 sessions are preserved as legacy/unclassified sessions because older data did not store completed-session AFK type.
+- Added `menki.afk.list` permission, defaulting to true.
+- No new scheduler, database, GUI framework, packet library, economy dependency, or server-specific integration was added.
+- Runtime AFK detection remains RAM-based and movement/chat hot paths remain free of statistics disk writes.
+- Preserved the Paper 1.21.11 -> 26.2 universal compatibility target and Java 21 bytecode baseline.
+
 ## 1.2.0 Universal
 
 - Added standalone persistent AFK statistics in `plugins/MENKIAFK/stats.yml`.
