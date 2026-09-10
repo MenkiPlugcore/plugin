@@ -1,6 +1,6 @@
 # MENKIAFK Public API v1
 
-MENKIAFK v1.5.0 exposes a small read-only Bukkit API for plugins that want to consume AFK state without parsing commands, placeholders, or `stats.yml`.
+MENKIAFK v1.5.0 introduced the read-only Bukkit API. v1.5.1 Production Candidate preserves the same public contract and adds CI regression tests that lock the v1 method/event surface before v1.6.0 Production Stable.
 
 ## Runtime dependency
 
@@ -16,7 +16,7 @@ If the integration is optional, use:
 softdepend: [MENKIAFK]
 ```
 
-The consuming project must compile against the MENKIAFK JAR that contains the `store.menkiestes.menkiafk.api` package. Do not shade or relocate MENKIAFK API classes into the consuming plugin.
+Compile against the MENKIAFK JAR containing `store.menkiestes.menkiafk.api`. Do not shade or relocate MENKIAFK API classes into the consuming plugin.
 
 ## Obtain the API
 
@@ -70,7 +70,7 @@ int automatic = stats.autoSessions();
 long lastAfkAt = stats.lastAfkAt();
 ```
 
-`AfkStatisticsSnapshot` follows the same live projection behavior as MENKIAFK commands/placeholders: an active session is reflected once it satisfies the configured minimum statistics duration. The snapshot is immutable.
+`AfkStatisticsSnapshot` follows the same live projection behavior as MENKIAFK commands/placeholders: an active session is reflected once it satisfies the configured minimum statistics duration. Snapshots are immutable.
 
 ## Events
 
@@ -99,11 +99,11 @@ public void onLeaveAfk(PlayerLeaveAfkEvent event) {
 }
 ```
 
-Lifecycle events are informational and are intentionally not cancellable. MENKIAFK does not emit leave events during plugin/server disable; shutdown only finalizes persistence and clears runtime state.
+Lifecycle events are informational and intentionally not cancellable. MENKIAFK does not emit leave events during plugin/server disable; shutdown only finalizes persistence and clears runtime state.
 
 ## Public types
 
-Stable API surface introduced in v1.5.0:
+Public API v1 compatibility surface:
 
 - `store.menkiestes.menkiafk.api.MenkiAfkAPI`
 - `store.menkiestes.menkiafk.api.AfkSessionSnapshot`
@@ -114,6 +114,8 @@ Stable API surface introduced in v1.5.0:
 
 Classes under `store.menkiestes.menkiafk.api.internal` are implementation details and are not part of the compatibility contract.
 
-## Design contract
+## v1.5.1 API candidate guarantee
 
-The v1 API is intentionally read-only. It does not expose force-AFK, force-return, raw mutable session objects, YAML objects, or internal managers. This keeps integrations isolated from MENKIAFK persistence/lifecycle internals and leaves the core standalone and lightweight.
+The production-candidate CI directly verifies that the v1 query methods remain available, `MANUAL`/`AUTO` enum values remain present, lifecycle events remain non-cancellable, and all required public API classes are packaged in the final release JAR.
+
+This is a compatibility guard, not a runtime mutation API. The v1 API remains intentionally read-only: it does not expose force-AFK, force-return, mutable internal sessions, YAML objects, or internal managers.

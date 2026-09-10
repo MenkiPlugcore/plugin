@@ -1,18 +1,40 @@
-# MENKIAFK v1.5.0 Universal
+# MENKIAFK v1.5.1 Universal — Production Candidate
 
 Standalone native AFK plugin by MENKIESTES. MENKIAFK does not require a specific server setup, economy plugin, AFK world, crate plugin, or external database.
+
+v1.5.1 is a **feature-freeze production candidate**. It does not add gameplay features; it adds automated regression and artifact verification gates before MENKIAFK v1.6.0 Production Stable.
 
 ## Compatibility target
 
 - Paper 1.21.11 -> 26.2: one JAR target
 - Spigot 1.21.11: supported through Bukkit/Spigot API usage
 - Build bytecode: Java 21 (`--release 21`)
-- Runtime: Java 21 on Paper 1.21.11; Java 25 on Paper 26.1+
+- CI regression matrix: Java 21 and Java 25
 - No NMS, CraftBukkit internals, reflection into Minecraft internals, or paperweight/reobf output
 - PlaceholderAPI is optional (`softdepend`)
 - EssentialsX compatible; MENKIAFK can own the bare `/afk` label while `/essentials:afk` remains untouched
 
 The plugin intentionally compiles against the lowest target API, Paper 1.21.11, so the universal JAR does not accidentally reference newer-only APIs.
+
+## v1.5.1 Production Candidate gates
+
+Every pull request and production build now verifies:
+
+- Maven regression tests on Java 21 and Java 25
+- public API v1 method signatures
+- immutable snapshot behavior and legacy-session accounting
+- lifecycle events remain notification-only/non-cancellable
+- `plugin.yml` name, version, main class, and API baseline
+- default config remains standalone and production-candidate versioned
+- required public API classes are present inside the final JAR
+- Java classfile baseline remains Java 21 (major version 65)
+- Bukkit/Paper and PlaceholderAPI provided dependencies are not bundled into the JAR
+- no NMS or CraftBukkit bytecode dependency is detected by the release verification step
+- release channel is explicitly `candidate` or `stable`
+
+The `candidate` channel is published as a GitHub **Prerelease**, not as Latest stable. v1.6.0 can switch the same pipeline to `stable` after manual smoke testing is complete.
+
+See [`PRODUCTION-CANDIDATE.md`](PRODUCTION-CANDIDATE.md) for the remaining live-server checklist.
 
 ## Features
 
@@ -27,27 +49,24 @@ The plugin intentionally compiles against the lowest target API, Paper 1.21.11, 
 - `/afkcheck [player]`
 - `/afklist` for currently online AFK players
 - chat mention warning for AFK players
-- `/msg`, `/tell`, `/w`, `/whisper`, `/pm`, `/m` warning without cancelling the original command
+- private-message warning for configured message commands
 - bounded remembered-message inbox while the target is AFK
 - configurable return-on activity triggers
-- runtime AFK sessions remain RAM-only and TPS-friendly
 - persistent AFK statistics stored locally in `plugins/MENKIAFK/stats.yml`
-- `/afkstats [player]` for today, week, total AFK, session counters, longest session, and last AFK
+- `/afkstats [player]` for today, week, total, session counters, longest session, and last AFK
 - `/afktop [total|today|week|longest|sessions] [page]`
-- `/afkleaderboard` alias for `/afktop`
+- `/afkleaderboard` alias
 - configurable minimum AFK duration before a session enters statistics
 - Manual vs Auto session counters
 - autosave checkpoints for active valid sessions
-- admin reset with `/menkiafk resetstats <player>`
-- PlaceholderAPI placeholders when PlaceholderAPI is installed
+- `/menkiafk resetstats <player>`
+- PlaceholderAPI support when installed
 - read-only public API for other Bukkit/Paper plugins
-- `PlayerEnterAfkEvent` and `PlayerLeaveAfkEvent` integration events
+- `PlayerEnterAfkEvent` and `PlayerLeaveAfkEvent`
 
-## v1.5.0 Public API
+## Public API v1
 
-MENKIAFK registers `store.menkiestes.menkiafk.api.MenkiAfkAPI` through Bukkit's `ServicesManager`. The public API is intentionally read-only so external plugins cannot mutate MENKIAFK's lifecycle or persistence state.
-
-Quick lookup:
+MENKIAFK registers `store.menkiestes.menkiafk.api.MenkiAfkAPI` through Bukkit `ServicesManager`.
 
 ```java
 import store.menkiestes.menkiafk.api.MenkiAfkAPI;
@@ -57,73 +76,32 @@ boolean afk = afkApi.isAfk(player.getUniqueId());
 long total = afkApi.getTotalAfkTime(player.getUniqueId());
 ```
 
-Available immutable models:
+Public immutable models:
 
 - `AfkSessionSnapshot`
 - `AfkStatisticsSnapshot`
 - `AfkSessionType`
 
-Available events:
+Public events:
 
-- `PlayerEnterAfkEvent` - fired after AFK state is committed
-- `PlayerLeaveAfkEvent` - fired after AFK state is removed during normal runtime, including quit/kick cleanup
+- `PlayerEnterAfkEvent`
+- `PlayerLeaveAfkEvent`
 
-Events are informational and non-cancellable. Leave events are not emitted during plugin/server disable so shutdown only performs persistence finalization and runtime cleanup.
+The public API remains intentionally read-only. External plugins cannot force AFK/return or access mutable internal managers/YAML through the supported API contract.
 
-See [`API.md`](API.md) for dependency setup, ServicesManager lookup, query examples, event examples, and the public compatibility contract.
-
-## v1.4.1 Stability Patch
-
-v1.4.1 is intentionally a feature freeze patch. It adds no gameplay system and no new repeating task.
-
-Stability hardening:
-
-- async chat continuations verify the player is still online before touching AFK state
-- external namespaced AFK commands such as `/essentials:afk` are no longer mistaken for MENKIAFK's own toggle in activity handling
-- `stats.yml` saves are written to `stats.yml.tmp` first and then replaced atomically when the filesystem supports it
-- unreadable YAML is quarantined as `stats-corrupt-<timestamp>.yml` instead of being silently overwritten
-- if the corrupt file cannot be quarantined, statistic writes are blocked for that server session to protect the original file
-- if `stats.yml` uses a schema newer than MENKIAFK understands, known data is read best-effort but writes are blocked so downgrading cannot overwrite a newer format
-- inconsistent Manual/Auto counters and longest-session values are normalized safely on load
-- `/menkiafk status` includes `Stats I/O: OK/BLOCKED`; failed writes show as unhealthy until a later write succeeds
-- `/menkiafk reload` checkpoints statistics before applying new statistics configuration
-- shutdown logs distinguish a successful save from a deliberately blocked persistence state
-
-The persistent schema remains version 3. Existing v1.2.0, v1.3.0, v1.4.0, and v1.4.1 data remains readable.
-
-## v1.4.0 Utility & Configuration
-
-Manual AFK configuration:
-
-```yaml
-manual-afk:
-  require-reason: false
-  default-reason: "Sedang tidak tersedia"
-```
-
-With `require-reason: false`, `/afk` immediately enters AFK using `default-reason`. Set it to `true` to preserve reason-required behavior.
-
-Silent AFK is permission-based:
-
-```text
-menki.afk.silent
-```
-
-A player with this permission still becomes AFK normally and still contributes to statistics, but their AFK and return broadcasts are suppressed. The permission defaults to false so existing server broadcast behavior is not changed automatically.
-
-`stats.yml` schema v3 adds `last-afk-at`. Existing v1.2.0/v1.3.0 data remains readable; older records simply have no historical last-AFK timestamp until the player enters AFK again.
+See [`API.md`](API.md) for integration details.
 
 ## Commands
 
 - `/afk [reason]` - enter AFK manually; use `/afk` again to return
-- `/afkcheck [player]` - check current AFK state
+- `/afkcheck [player]` - check AFK state
 - `/afklist` - list online AFK players, duration, type, and reason
-- `/afkstats [player]` - view persistent AFK statistics and last AFK
+- `/afkstats [player]` - view persistent AFK statistics
 - `/afktop [total|today|week|longest|sessions] [page]` - view leaderboard
 - `/afkleaderboard ...` - alias of `/afktop`
-- `/menkiafk status` - plugin runtime status including statistics I/O health
+- `/menkiafk status` - runtime status including statistics I/O health
 - `/menkiafk reload` - checkpoint statistics and reload configuration
-- `/menkiafk resetstats <player>` - reset one player's saved AFK statistics
+- `/menkiafk resetstats <player>` - reset one player's saved statistics
 
 ## PlaceholderAPI
 
@@ -148,18 +126,18 @@ Persistent statistics:
 - `%menkiafk_stats_auto_sessions%`
 - `%menkiafk_stats_longest%`
 
-Numeric total placeholders return plain integer values and are intended for scoreboard conditions, sorting, math, and external integrations without parsing formatted duration text.
+Numeric total placeholders return plain integer values for conditions, sorting, math, and external integrations.
 
 ## Permissions
 
 - `menki.afk` - use `/afk` (default: true)
 - `menki.afk.list` - use `/afklist` (default: true)
 - `menki.afk.stats` - use `/afkstats` (default: true)
-- `menki.afk.top` - use `/afktop` and `/afkleaderboard` (default: true)
-- `menki.afk.admin` - admin status/reload/reset and checking other players (default: op)
+- `menki.afk.top` - use `/afktop` / `/afkleaderboard` (default: true)
+- `menki.afk.admin` - admin status/reload/reset/checking other players (default: op)
 - `menki.afk.auto.bypass` - bypass automatic AFK (default: op)
 - `menki.afk.color` - allow `&` color codes in AFK reasons (default: op)
-- `menki.afk.silent` - suppress own AFK/return broadcasts while keeping normal state/stats (default: false)
+- `menki.afk.silent` - suppress own AFK/return broadcasts while keeping state/stats (default: false)
 
 ## Statistics design
 
@@ -168,13 +146,16 @@ Persistent storage uses Bukkit YAML (`stats.yml`). There is no MySQL, Redis, SQL
 - activity detection does not write statistics to disk
 - leaderboard sorting runs only when `/afktop` is requested
 - `/afklist` scans online players only when used
-- daily history remains bounded by `stats.keep-daily-days`
-- active sessions are projected into autosave checkpoints without mutating in-memory totals
+- daily history is bounded by `stats.keep-daily-days`
+- active sessions are projected into autosave checkpoints without mutating RAM totals
 - sessions shorter than `stats.minimum-session-seconds` do not enter duration/session statistics
-- last-AFK timestamp is a single long value per player and adds no scheduler
-- save replacement is crash-safer because the target file is not directly rewritten in-place
+- `last-afk-at` is a single timestamp per player
+- `stats.yml` uses temp-file + atomic replace when supported
+- corrupt YAML is quarantined instead of silently overwritten
+- newer unsupported schemas are read best-effort with writes blocked to protect downgrade data
+- schema remains version 3 and is backward compatible with v1.2.0-v1.5.0 data
 
-## Build
+## Build and tests
 
 Requirements: JDK 21+ and Maven.
 
@@ -182,22 +163,32 @@ Requirements: JDK 21+ and Maven.
 mvn clean package
 ```
 
+Regression tests only:
+
+```bash
+mvn clean test
+```
+
 Output:
 
 ```text
-MENKIAFK-1.5.0-Universal.jar
+MENKIAFK-1.5.1-Universal.jar
 ```
+
+JUnit is test-scope only and is not included in the production JAR.
 
 ## Installation / upgrade
 
 1. Stop the server.
-2. Put `MENKIAFK-1.5.0-Universal.jar` in `plugins/`.
-3. Remove/rename older MENKIAFK JARs so only one version loads.
-4. Start the server.
-5. Optional: install PlaceholderAPI for `%menkiafk_*%` placeholders.
+2. Back up `plugins/MENKIAFK/` before candidate testing.
+3. Put `MENKIAFK-1.5.1-Universal.jar` in `plugins/`.
+4. Remove/rename older MENKIAFK JARs so only one version loads.
+5. Start the server.
+6. Run `/menkiafk status` and confirm `Stats I/O: OK`.
+7. Optional: install PlaceholderAPI for `%menkiafk_*%` placeholders.
 
-Existing v1.2.0-v1.4.1 config and `stats.yml` data remain compatible. v1.5.0 adds no required configuration key and keeps `stats.yml` schema version 3.
+Existing v1.2.0-v1.5.0 config and `stats.yml` data remain compatible. v1.5.1 adds no required runtime configuration key and keeps `stats.yml` schema version 3.
 
 ## Performance design
 
-MENKIAFK v1.5.0 adds no new repeating task. API queries read existing in-memory AFK state and synchronized statistics snapshots; lifecycle events are only created when AFK state actually changes. No polling, packet interception, NMS, external database, or network I/O is introduced by the public API.
+v1.5.1 adds no runtime scheduler, gameplay listener, database, network I/O, or integration dependency. New regression code is test-scope/build-time only. Runtime behavior remains the v1.5.0 core: RAM AFK state, existing auto-AFK/statistics tasks, bounded YAML persistence, and read-only API/event hooks.
