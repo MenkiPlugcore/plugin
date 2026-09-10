@@ -16,7 +16,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  build-java21:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Java 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
@@ -36,12 +36,54 @@ jobs:
         with:
           gradle-version: '8.10.2'
 
-      - name: Build
+      - name: Build + contract tests
         run: gradle clean build --stacktrace
 
-      - name: Upload JAR
+      - name: Verify production JAR
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="$(find build/libs -maxdepth 1 -name 'MENKIESTESParty-1.5.0.jar' -print -quit)"
+          test -n "$JAR"
+          test "$(find build/libs -maxdepth 1 -name '*.jar' | wc -l)" -eq 1
+          unzip -p "$JAR" plugin.yml | grep -q '^version: 1.5.0$'
+          jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/api/MenkiPartyAPI.class$'
+          jar tf "$JAR" | grep -q '^id/cadera/menkiestesparty/storage/JdbcStorageBackend.class$'
+          jar tf "$JAR" | grep -q '^org/sqlite/JDBC.class$'
+          jar tf "$JAR" | grep -q '^com/mysql/cj/jdbc/Driver.class$'
+          jar tf "$JAR" | grep -q '^messages.yml$'
+          jar tf "$JAR" | grep -q '^storage.yml$'
+          java -cp "$JAR" id.cadera.menkiestesparty.compat.RuntimeCompatibilityProbe
+          sha256sum "$JAR"
+
+      - name: Upload production candidate
         uses: actions/upload-artifact@v4
         with:
           name: MENKIESTESParty-${{ github.sha }}
-          path: plugins/MENKIESTESParty/build/libs/*.jar
+          path: plugins/MENKIESTESParty/build/libs/MENKIESTESParty-1.5.0.jar
           if-no-files-found: error
+
+  runtime-java25:
+    needs: build-java21
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download production candidate
+        uses: actions/download-artifact@v4
+        with:
+          name: MENKIESTESParty-${{ github.sha }}
+          path: artifact
+
+      - name: Set up Java 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - name: Java 25 runtime compatibility probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          JAR="artifact/MENKIESTESParty-1.5.0.jar"
+          test -f "$JAR"
+          java -cp "$JAR" id.cadera.menkiestesparty.compat.RuntimeCompatibilityProbe
+          javap -verbose -classpath "$JAR" id.cadera.menkiestesparty.MENKIESTESPartyPlugin | grep -q 'major version: 65'

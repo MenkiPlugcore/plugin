@@ -1,0 +1,43 @@
+# MENKIESTESParty v1.5.0 - Storage & Compatibility
+# YAML is the production-safe default. SQLite/MySQL can be enabled without
+# changing gameplay code or the public MenkiPartyAPI v1.0 contract.
+storage:
+  backend: YAML # YAML | SQLITE | MYSQL
+
+  # Normal dirty-state saves are queued/coalesced off the main thread.
+  # Durable reward receipts and shutdown still use a blocking flush.
+  async-writes: true
+  shutdown-flush-timeout-seconds: 10
+
+  # If SQL cannot initialize or later fails, preserve service availability by
+  # writing to the legacy YAML files. Restart after fixing SQL to retry it.
+  fallback-to-yaml-on-error: true
+
+  # While SQL is primary, keep parties.yml/wars.yml/etc as warm local backups.
+  mirror-yaml-backup: true
+
+  migration:
+    # First SQL boot: import old YAML only when SQL contains no documents.
+    import-yaml-when-sql-empty: true
+    # Also fill newly introduced/missing document rows from existing YAML.
+    import-missing-yaml-documents: true
+
+  sql:
+    table: menkiestesparty_storage
+
+  sqlite:
+    file: storage.db
+
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    database: menkiestesparty
+    username: root
+    password: ''
+    parameters: 'useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&connectTimeout=5000&socketTimeout=10000'
+
+compatibility:
+  folia:
+    # v1.5.0 introduces the scheduler boundary and runtime detection, but full
+    # region-thread safety is not certified yet. Keep false in production.
+    experimental: false

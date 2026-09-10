@@ -1,0 +1,25 @@
+# MENKIESTESParty v1.5.0 message file.
+# Legacy gameplay messages are kept compatible; new v1.5+ surfaces use this file.
+prefix: '&b&lPARTY &8»&r'
+
+common:
+  no-permission: '&cKamu tidak punya permission untuk perintah ini.'
+  player-only: '&cPerintah ini hanya dapat digunakan player.'
+
+storage:
+  header: '&b&lStorage Diagnostics'
+  configured: '&7Configured: &f{backend}'
+  active: '&7Active: &f{backend}'
+  async: '&7Async writes: &f{value}'
+  degraded: '&7Degraded/fallback: &f{value}'
+  pending: '&7Pending writes: &f{count}'
+  last-write: '&7Last successful write: &f{value}'
+  last-error: '&7Last error: &f{error}'
+  verify-start: '&7Checking storage backend...'
+  verify-ok: '&aStorage backend responded successfully.'
+  verify-failed: '&cStorage backend verification failed. Check console/config.'
+  flush-ok: '&aDurable storage flush completed.'
+  flush-failed: '&cDurable storage flush failed. Check console immediately.'
+  backup-ok: '&aManual YAML snapshot created: &f{path}'
+  backup-failed: '&cBackup failed: &f{error}'
+  usage: '&7Usage: /partystorage <status|verify|flush|backup>'

@@ -1,9 +1,9 @@
 name: MENKIESTESParty
-version: 1.4.1
+version: 1.5.0
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
-description: Modular Paper Party/Guild framework with hardened public API, integrations, progression, interaction GUI, stability inbox, contracts, diplomacy, recruitment, applications and Party War.
+description: Modular Paper Party/Guild framework with pluggable YAML/SQLite/MySQL storage, hardened public API, progression, interaction GUI, contracts, diplomacy, recruitment, applications and Party War.
 softdepend: [PlaceholderAPI, GriefPrevention, Vault]
 commands:
   party:
@@ -92,6 +92,10 @@ commands:
     aliases: [papiadmin]
     description: MENKIESTESParty public API diagnostics and compatibility verification
     usage: /partyapi [status|verify]
+  partystorage:
+    aliases: [pstorage]
+    description: MENKIESTESParty storage diagnostics, durable flush and backup
+    usage: /partystorage [status|verify|flush|backup]
 permissions:
   menkiestesparty.admin:
     description: Full MENKIESTESParty administration

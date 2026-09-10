@@ -8,6 +8,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private StorageBundle storage;
+    private MessageManager messages;
+    private SchedulerCompat schedulerCompat;
     private PartyService parties;
     private ProgressionManager progression;
     private ProgressionGuiV122 progressionGui;
@@ -25,7 +27,27 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     @Override public void onEnable() {
         saveDefaultConfig();
         migrateConfig();
-        this.storage = new StorageBundle(this);
+        this.messages = new MessageManager(this);
+        this.schedulerCompat = new SchedulerCompat(this);
+
+        if (!schedulerCompat.runtimeAllowed()) {
+            getLogger().severe("Folia detected. MENKIESTESParty v1.5.0 blocks Folia by default because full region-thread safety is not certified yet.");
+            getLogger().severe("Use compatibility.folia.experimental=true only for controlled testing. Core data was not loaded.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+        if (schedulerCompat.foliaDetected()) {
+            getLogger().warning("Experimental Folia scheduler mode enabled. This is not production-certified in v1.5.0.");
+        }
+
+        try {
+            this.storage = new StorageBundle(this);
+        } catch (RuntimeException storageFailure) {
+            getLogger().severe("MENKIESTESParty storage initialization failed: " + storageFailure.getMessage());
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
+
         this.parties = new PartyService(this, storage);
         this.progression = new ProgressionManager(this, parties, storage);
         this.war = new WarManager(this, parties, storage);
@@ -46,6 +68,14 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             PluginCommand cmd = getCommand(cmdName);
             if (cmd != null) { cmd.setExecutor(executor); cmd.setTabCompleter(executor); }
         }
+
+        StorageAdminCommand storageAdmin = new StorageAdminCommand(this);
+        PluginCommand storageCommand = getCommand("partystorage");
+        if (storageCommand != null) {
+            storageCommand.setExecutor(storageAdmin);
+            storageCommand.setTabCompleter(storageAdmin);
+        }
+
         Bukkit.getPluginManager().registerEvents(new PartyListener(this, parties, war), this);
         Bukkit.getPluginManager().registerEvents(progression, this);
         Bukkit.getPluginManager().registerEvents(interactions, this);
@@ -65,14 +95,17 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getLogger().severe("Public MENKIESTESParty API service unregistered by v1.4.1 fail-closed guard. Core Party remains enabled.");
         }
 
-        Bukkit.getScheduler().runTaskTimer(this, () -> { war.tickSecond(); if (dirty) flush(); }, 20L, 20L);
-        Bukkit.getScheduler().runTaskTimer(this, stability::tickFast, 100L, 100L);
+        schedulerCompat.runGlobalTimer(() -> {
+            war.tickSecond();
+            if (dirty) flushAsync();
+        }, 20L, 20L);
+        schedulerCompat.runGlobalTimer(stability::tickFast, 100L, 100L);
         long apiScanTicks = Math.max(1L, getConfig().getLong("developer.events.scan-ticks", 20L));
-        Bukkit.getScheduler().runTaskTimer(this, () -> {
+        schedulerCompat.runGlobalTimer(() -> {
             if (apiHardening.enabled()) apiHardening.tick();
             else developerApi.tick();
         }, apiScanTicks, apiScanTicks);
-        Bukkit.getScheduler().runTaskTimer(this, () -> {
+        schedulerCompat.runGlobalTimer(() -> {
             war.tickMinute();
             parties.tickWeeklyReset();
             interactions.tickMinute();
@@ -88,7 +121,12 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             }
         }
         getLogger().info("MENKIESTESParty v" + getDescription().getVersion()
-                + " enabled. Progression: projects=" + progression.moduleEnabled("projects")
+                + " enabled. Storage: configured=" + storage.configuredBackend()
+                + ", active=" + storage.activeBackend()
+                + ", async=" + storage.asyncWrites()
+                + ", degraded=" + storage.degraded()
+                + ". Scheduler=" + schedulerCompat.mode()
+                + ". Progression: projects=" + progression.moduleEnabled("projects")
                 + ", skills=" + progression.moduleEnabled("skill-tree")
                 + ", divisions=" + progression.moduleEnabled("divisions")
                 + ", identity=" + progression.moduleEnabled("identity")
@@ -169,16 +207,43 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
             getConfig().set(hardeningMarker, true);
             getLogger().info("Config migration: v1.4.1 API hardening/compatibility defaults merged into config.yml.");
         }
+
+        String storageMarker = "migrations.storage-compatibility-v1_5_0";
+        if (!getConfig().getBoolean(storageMarker, false)) {
+            getConfig().options().copyDefaults(true);
+            getConfig().set(storageMarker, true);
+            getLogger().info("Config migration: v1.5.0 storage/compatibility defaults merged into config.yml.");
+        }
         saveConfig();
     }
 
     @Override public void onDisable() {
         Bukkit.getServicesManager().unregisterAll(this);
-        flush();
+        if (storage != null) storage.close();
+        dirty = false;
     }
 
     public void saveDataSoon() { dirty = true; }
-    public void flush() { if (storage != null) storage.saveAll(); dirty = false; }
+
+    /** Durable synchronous flush. Required before external reward side effects. */
+    public void flush() { flushDurable(); }
+
+    public boolean flushDurable() {
+        if (storage == null) return false;
+        boolean success = storage.saveAllBlocking();
+        if (success) dirty = false;
+        return success;
+    }
+
+    private void flushAsync() {
+        if (storage == null) return;
+        storage.saveAllAsync();
+        dirty = false;
+    }
+
+    public StorageBundle storage() { return storage; }
+    public MessageManager messages() { return messages; }
+    public SchedulerCompat schedulerCompat() { return schedulerCompat; }
     public PartyService parties() { return parties; }
     public ProgressionManager progression() { return progression; }
     public ProgressionGuiV122 progressionGui() { return progressionGui; }
@@ -194,6 +259,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
 
     public void reloadPluginConfig() {
         reloadConfig();
+        if (messages != null) messages.reload();
         if (apiHardening != null) apiHardening.verifyCompatibility();
     }
 }
