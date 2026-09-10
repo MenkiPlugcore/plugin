@@ -1,4 +1,4 @@
-# MENKIAFK v1.3.0 Universal
+# MENKIAFK v1.4.0 Universal
 
 Standalone native AFK plugin by MENKIESTES. MENKIAFK does not require a specific server setup, economy plugin, AFK world, crate plugin, or external database.
 
@@ -12,13 +12,16 @@ Standalone native AFK plugin by MENKIESTES. MENKIAFK does not require a specific
 - PlaceholderAPI is optional (`softdepend`)
 - EssentialsX compatible; MENKIAFK can own the bare `/afk` label while `/essentials:afk` remains untouched
 
-The plugin intentionally compiles against the **lowest target API (Paper 1.21.11)**. This keeps the bytecode from accidentally referencing newer 26.x-only APIs while remaining loadable by newer JVMs and Paper versions.
+The plugin intentionally compiles against the lowest target API, Paper 1.21.11, so the universal JAR does not accidentally reference newer-only APIs.
 
 ## Features
 
-- `/afk <reason>` manual AFK
+- `/afk [reason]` manual AFK
+- optional or required manual reason through config
+- configurable default reason when `/afk` is used without arguments
 - `/afk` again returns from AFK
 - configurable manual cooldown and maximum reason length
+- `menki.afk.silent` permission to suppress AFK/return broadcasts without changing AFK state or statistics
 - auto AFK with configurable timeout/check interval
 - MANUAL/AUTO AFK type
 - `/afkcheck [player]`
@@ -26,53 +29,46 @@ The plugin intentionally compiles against the **lowest target API (Paper 1.21.11
 - chat mention warning for AFK players
 - `/msg`, `/tell`, `/w`, `/whisper`, `/pm`, `/m` warning without cancelling the original command
 - bounded remembered-message inbox while the target is AFK
-- return on movement, rotation, chat, command, interaction, inventory click, or death (configurable)
-- plugin teleports do not count as activity by default
+- configurable return-on activity triggers
 - runtime AFK sessions remain RAM-only and TPS-friendly
 - persistent AFK statistics stored locally in `plugins/MENKIAFK/stats.yml`
-- `/afkstats [player]` for today, current week, total AFK, session count, session type counters, and longest session
+- `/afkstats [player]` for today, week, total AFK, session counters, longest session, and last AFK
 - `/afktop [total|today|week|longest|sessions] [page]`
 - `/afkleaderboard` alias for `/afktop`
 - configurable minimum AFK duration before a session enters statistics
 - Manual vs Auto session counters
-- active AFK sessions are included live in stats/leaderboards after they pass the configured minimum duration
-- autosave checkpoints include active valid AFK time for better crash recovery
+- autosave checkpoints for active valid sessions
 - admin reset with `/menkiafk resetstats <player>`
 - PlaceholderAPI placeholders when PlaceholderAPI is installed
 
-## Lightweight QoL design
+## v1.4.0 Utility & Configuration
 
-MENKIAFK v1.3.0 intentionally avoids adding heavy systems:
-
-- `/afklist` only scans currently online players when the command is used
-- the AFK list output is bounded by `afk-list.max-entries`
-- minimum session filtering is evaluated only when statistics are viewed or an AFK session ends/checkpoints
-- Manual/Auto classification adds only two integer counters per player
-- no new scheduler was added for v1.3.0
-- no MySQL, Redis, SQLite driver, Vault, packet library, GUI framework, or server-specific dependency
-- no disk writes occur in movement/chat hot paths
-
-## Statistics design
-
-Persistent storage uses Bukkit YAML (`stats.yml`). AFK activity detection remains RAM-based and leaderboard sorting happens only when `/afktop` is requested.
-
-New v1.3.0 setting:
+New manual AFK configuration:
 
 ```yaml
-stats:
-  minimum-session-seconds: 10
+manual-afk:
+  require-reason: false
+  default-reason: "Sedang tidak tersedia"
 ```
 
-Sessions shorter than this value are ignored by persistent statistics and leaderboards. Set it to `0` if every AFK session should count.
+With `require-reason: false`, `/afk` immediately enters AFK using `default-reason`. Set it to `true` to preserve reason-required behavior.
 
-`stats.yml` schema v2 stores `manual-sessions` and `auto-sessions`. Existing v1.2.0 totals remain compatible. Old v1.2.0 sessions cannot be retroactively classified, so `/afkstats` may show them as `Legacy v1.2` sessions while all new sessions are classified normally.
+Silent AFK is permission-based:
+
+```text
+menki.afk.silent
+```
+
+A player with this permission still becomes AFK normally and still contributes to statistics, but their AFK and return broadcasts are suppressed. The permission defaults to false so existing server broadcast behavior is not changed automatically.
+
+`stats.yml` schema v3 adds `last-afk-at`. Existing v1.2.0/v1.3.0 data remains readable; older records simply have no historical last-AFK timestamp until the player enters AFK again.
 
 ## Commands
 
-- `/afk <reason>` - enter AFK manually; use `/afk` again to return
+- `/afk [reason]` - enter AFK manually; use `/afk` again to return
 - `/afkcheck [player]` - check current AFK state
-- `/afklist` - list online AFK players, their duration, type, and reason
-- `/afkstats [player]` - view persistent AFK statistics
+- `/afklist` - list online AFK players, duration, type, and reason
+- `/afkstats [player]` - view persistent AFK statistics and last AFK
 - `/afktop [total|today|week|longest|sessions] [page]` - view leaderboard
 - `/afkleaderboard ...` - alias of `/afktop`
 - `/menkiafk status` - plugin runtime status
@@ -87,16 +83,22 @@ Current AFK state:
 - `%menkiafk_reason%`
 - `%menkiafk_time%`
 - `%menkiafk_type%`
+- `%menkiafk_last_afk%`
 
 Persistent statistics:
 
 - `%menkiafk_stats_today%`
 - `%menkiafk_stats_week%`
 - `%menkiafk_stats_total%`
+- `%menkiafk_stats_total_seconds%`
+- `%menkiafk_stats_total_minutes%`
+- `%menkiafk_stats_total_hours%`
 - `%menkiafk_stats_sessions%`
 - `%menkiafk_stats_manual_sessions%`
 - `%menkiafk_stats_auto_sessions%`
 - `%menkiafk_stats_longest%`
+
+Numeric total placeholders return plain integer values and are intended for scoreboard conditions, sorting, math, and external integrations without parsing formatted duration text.
 
 ## Permissions
 
@@ -107,6 +109,19 @@ Persistent statistics:
 - `menki.afk.admin` - admin status/reload/reset and checking other players (default: op)
 - `menki.afk.auto.bypass` - bypass automatic AFK (default: op)
 - `menki.afk.color` - allow `&` color codes in AFK reasons (default: op)
+- `menki.afk.silent` - suppress own AFK/return broadcasts while keeping normal state/stats (default: false)
+
+## Statistics design
+
+Persistent storage uses Bukkit YAML (`stats.yml`). There is no MySQL, Redis, SQLite driver, Vault, packet library, GUI framework, or server-specific dependency.
+
+- activity detection does not write statistics to disk
+- leaderboard sorting runs only when `/afktop` is requested
+- `/afklist` scans online players only when used
+- daily history remains bounded by `stats.keep-daily-days`
+- active sessions are projected into autosave checkpoints without mutating in-memory totals
+- sessions shorter than `stats.minimum-session-seconds` do not enter duration/session statistics
+- last-AFK timestamp is a single long value per player and adds no scheduler
 
 ## Build
 
@@ -116,28 +131,22 @@ Requirements: JDK 21+ and Maven.
 mvn clean package
 ```
 
-The project uses `maven.compiler.release=21` and Paper API `1.21.11-R0.1-SNAPSHOT` as `provided`.
-
 Output:
 
 ```text
-MENKIAFK-1.3.0-Universal.jar
+MENKIAFK-1.4.0-Universal.jar
 ```
 
-## Installation
+## Installation / upgrade
 
 1. Stop the server.
-2. Put `MENKIAFK-1.3.0-Universal.jar` in `plugins/`.
+2. Put `MENKIAFK-1.4.0-Universal.jar` in `plugins/`.
 3. Remove/rename older MENKIAFK JARs so only one version loads.
 4. Start the server.
 5. Optional: install PlaceholderAPI for `%menkiafk_*%` placeholders.
 
-## Upgrade from v1.2.0
-
-Existing configuration and `stats.yml` are backward compatible. The new options have built-in defaults even when an old `config.yml` is retained.
-
-Existing v1.2.0 total/session statistics are preserved. Manual/Auto counters begin classification with v1.3.0 because v1.2.0 did not persist the AFK type of completed sessions.
+Existing v1.2.0/v1.3.0 config and `stats.yml` data remain compatible. New config keys use built-in fallbacks even if an older `config.yml` is retained. For full visibility of new options, merge the new keys into the existing config or regenerate it after backing up custom values.
 
 ## Performance design
 
-AFK sessions, last-activity timestamps and cooldowns remain runtime memory only. Movement/rotation uses a throttled timestamp update; auto-AFK is checked periodically rather than scanning every tick. Mention work is bounded by online AFK players and a configurable notification cap. Persistent statistics are updated on AFK lifecycle transitions rather than movement events, `/afklist` scans only on command use, and leaderboard sorting remains command-driven.
+MENKIAFK v1.4.0 adds no new repeating task. AFK sessions, last-activity timestamps and cooldowns remain runtime memory only. Movement/rotation uses throttled timestamp updates; auto-AFK is checked periodically by the existing task. Persistent statistics are updated on AFK lifecycle transitions, autosave uses the existing stats task, and the new utility placeholders are constant-time reads from one player snapshot.
