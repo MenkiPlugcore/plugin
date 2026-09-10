@@ -1,4 +1,4 @@
-# MENKIAFK v1.4.0 Universal
+# MENKIAFK v1.4.1 Universal
 
 Standalone native AFK plugin by MENKIESTES. MENKIAFK does not require a specific server setup, economy plugin, AFK world, crate plugin, or external database.
 
@@ -41,9 +41,27 @@ The plugin intentionally compiles against the lowest target API, Paper 1.21.11, 
 - admin reset with `/menkiafk resetstats <player>`
 - PlaceholderAPI placeholders when PlaceholderAPI is installed
 
+## v1.4.1 Stability Patch
+
+v1.4.1 is intentionally a feature freeze patch. It adds no gameplay system and no new repeating task.
+
+Stability hardening:
+
+- async chat continuations verify the player is still online before touching AFK state
+- external namespaced AFK commands such as `/essentials:afk` are no longer mistaken for MENKIAFK's own toggle in activity handling
+- `stats.yml` saves are written to `stats.yml.tmp` first and then replaced atomically when the filesystem supports it
+- unreadable YAML is quarantined as `stats-corrupt-<timestamp>.yml` instead of being silently overwritten
+- if the corrupt file cannot be quarantined, statistic writes are blocked for that server session to protect the original file
+- inconsistent Manual/Auto counters and longest-session values are normalized safely on load
+- `/menkiafk status` includes `Stats I/O: OK/BLOCKED`
+- `/menkiafk reload` checkpoints statistics before applying new statistics configuration
+- shutdown logs distinguish a successful save from a deliberately blocked persistence state
+
+The persistent schema remains version 3. Existing v1.2.0, v1.3.0, and v1.4.0 data remains readable.
+
 ## v1.4.0 Utility & Configuration
 
-New manual AFK configuration:
+Manual AFK configuration:
 
 ```yaml
 manual-afk:
@@ -71,8 +89,8 @@ A player with this permission still becomes AFK normally and still contributes t
 - `/afkstats [player]` - view persistent AFK statistics and last AFK
 - `/afktop [total|today|week|longest|sessions] [page]` - view leaderboard
 - `/afkleaderboard ...` - alias of `/afktop`
-- `/menkiafk status` - plugin runtime status
-- `/menkiafk reload` - reload configuration
+- `/menkiafk status` - plugin runtime status including statistics I/O health
+- `/menkiafk reload` - checkpoint statistics and reload configuration
 - `/menkiafk resetstats <player>` - reset one player's saved AFK statistics
 
 ## PlaceholderAPI
@@ -122,6 +140,7 @@ Persistent storage uses Bukkit YAML (`stats.yml`). There is no MySQL, Redis, SQL
 - active sessions are projected into autosave checkpoints without mutating in-memory totals
 - sessions shorter than `stats.minimum-session-seconds` do not enter duration/session statistics
 - last-AFK timestamp is a single long value per player and adds no scheduler
+- save replacement is crash-safer because the target file is not directly rewritten in-place
 
 ## Build
 
@@ -134,19 +153,19 @@ mvn clean package
 Output:
 
 ```text
-MENKIAFK-1.4.0-Universal.jar
+MENKIAFK-1.4.1-Universal.jar
 ```
 
 ## Installation / upgrade
 
 1. Stop the server.
-2. Put `MENKIAFK-1.4.0-Universal.jar` in `plugins/`.
+2. Put `MENKIAFK-1.4.1-Universal.jar` in `plugins/`.
 3. Remove/rename older MENKIAFK JARs so only one version loads.
 4. Start the server.
 5. Optional: install PlaceholderAPI for `%menkiafk_*%` placeholders.
 
-Existing v1.2.0/v1.3.0 config and `stats.yml` data remain compatible. New config keys use built-in fallbacks even if an older `config.yml` is retained. For full visibility of new options, merge the new keys into the existing config or regenerate it after backing up custom values.
+Existing v1.2.0/v1.3.0/v1.4.0 config and `stats.yml` data remain compatible. v1.4.1 adds no new required configuration key.
 
 ## Performance design
 
-MENKIAFK v1.4.0 adds no new repeating task. AFK sessions, last-activity timestamps and cooldowns remain runtime memory only. Movement/rotation uses throttled timestamp updates; auto-AFK is checked periodically by the existing task. Persistent statistics are updated on AFK lifecycle transitions, autosave uses the existing stats task, and the new utility placeholders are constant-time reads from one player snapshot.
+MENKIAFK v1.4.1 adds no new repeating task. AFK sessions, last-activity timestamps and cooldowns remain runtime memory only. Movement/rotation uses throttled timestamp updates; auto-AFK is checked periodically by the existing task. Persistent statistics are updated on AFK lifecycle transitions, autosave uses the existing stats task, and the stability hardening only changes lifecycle guards and the way YAML is safely replaced on disk.
