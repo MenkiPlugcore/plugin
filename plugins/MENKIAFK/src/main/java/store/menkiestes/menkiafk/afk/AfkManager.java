@@ -3,6 +3,7 @@ package store.menkiestes.menkiafk.afk;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import store.menkiestes.menkiafk.MenkiAfkPlugin;
+import store.menkiestes.menkiafk.stats.StatsManager;
 import store.menkiestes.menkiafk.util.Text;
 
 import java.util.*;
@@ -11,23 +12,37 @@ import java.util.regex.Pattern;
 
 public final class AfkManager {
     private final MenkiAfkPlugin plugin;
+    private final StatsManager statsManager;
     private final Map<UUID, AfkSession> sessions = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastActivity = new ConcurrentHashMap<>();
     private final Map<UUID, Long> nextManualAfk = new ConcurrentHashMap<>();
 
-    public AfkManager(MenkiAfkPlugin plugin) {
+    public AfkManager(MenkiAfkPlugin plugin, StatsManager statsManager) {
         this.plugin = plugin;
+        this.statsManager = statsManager;
     }
 
     public void initializePlayer(Player player) {
         lastActivity.put(player.getUniqueId(), System.currentTimeMillis());
+        statsManager.registerPlayer(player);
     }
 
     public void removePlayer(Player player) {
         UUID id = player.getUniqueId();
-        sessions.remove(id);
+        AfkSession removed = sessions.remove(id);
+        if (removed != null) {
+            statsManager.finishSession(id, System.currentTimeMillis());
+        }
         lastActivity.remove(id);
         nextManualAfk.remove(id);
+    }
+
+    public void shutdown() {
+        long now = System.currentTimeMillis();
+        statsManager.finishAllSessions(now);
+        sessions.clear();
+        lastActivity.clear();
+        nextManualAfk.clear();
     }
 
     public boolean isAfk(UUID id) {
@@ -70,11 +85,14 @@ public final class AfkManager {
     }
 
     public void setManualAfk(Player player, String rawReason) {
+        if (isAfk(player.getUniqueId())) return;
+
         String reason = player.hasPermission("menki.afk.color")
                 ? Text.coloredReason(rawReason)
                 : Text.plainReason(rawReason);
         long now = System.currentTimeMillis();
         sessions.put(player.getUniqueId(), new AfkSession(reason, now, AfkType.MANUAL));
+        statsManager.startSession(player, now);
         lastActivity.put(player.getUniqueId(), now);
 
         long cooldown = Math.max(0L, plugin.getConfig().getLong("manual-afk.cooldown-seconds", 8L)) * 1000L;
@@ -97,6 +115,7 @@ public final class AfkManager {
                 "%seconds%", timeoutSeconds));
         long now = System.currentTimeMillis();
         sessions.put(player.getUniqueId(), new AfkSession(reason, now, AfkType.AUTO));
+        statsManager.startSession(player, now);
 
         if (plugin.getConfig().getBoolean("broadcast.on-afk", true)) {
             String msg = Text.replace(Text.cfg(plugin, "messages.auto-afk-broadcast"),
@@ -110,7 +129,10 @@ public final class AfkManager {
         touch(player);
         if (session == null) return false;
 
-        long duration = System.currentTimeMillis() - session.startedAt();
+        long now = System.currentTimeMillis();
+        long duration = now - session.startedAt();
+        statsManager.finishSession(player.getUniqueId(), now);
+
         if (broadcast && plugin.getConfig().getBoolean("broadcast.on-return", true)) {
             String msg = Text.replace(Text.cfg(plugin, "messages.return-broadcast"),
                     "%player%", player.getName(), "%duration%", Text.duration(duration));
