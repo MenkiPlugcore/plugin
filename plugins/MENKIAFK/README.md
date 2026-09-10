@@ -52,8 +52,9 @@ Stability hardening:
 - `stats.yml` saves are written to `stats.yml.tmp` first and then replaced atomically when the filesystem supports it
 - unreadable YAML is quarantined as `stats-corrupt-<timestamp>.yml` instead of being silently overwritten
 - if the corrupt file cannot be quarantined, statistic writes are blocked for that server session to protect the original file
+- if `stats.yml` uses a schema newer than v1.4.1 understands, known data is read best-effort but writes are blocked so downgrading cannot overwrite a newer format
 - inconsistent Manual/Auto counters and longest-session values are normalized safely on load
-- `/menkiafk status` includes `Stats I/O: OK/BLOCKED`
+- `/menkiafk status` includes `Stats I/O: OK/BLOCKED`; failed writes show as unhealthy until a later write succeeds
 - `/menkiafk reload` checkpoints statistics before applying new statistics configuration
 - shutdown logs distinguish a successful save from a deliberately blocked persistence state
 
