@@ -98,7 +98,7 @@ public final class AfkManager {
         long cooldown = Math.max(0L, plugin.getConfig().getLong("manual-afk.cooldown-seconds", 8L)) * 1000L;
         nextManualAfk.put(player.getUniqueId(), now + cooldown);
 
-        if (plugin.getConfig().getBoolean("broadcast.on-afk", true)) {
+        if (plugin.getConfig().getBoolean("broadcast.on-afk", true) && !isSilent(player)) {
             String msg = Text.replace(Text.cfg(plugin, "messages.afk-broadcast"),
                     "%player%", player.getName(), "%reason%", reason);
             Bukkit.broadcastMessage(msg);
@@ -117,7 +117,7 @@ public final class AfkManager {
         sessions.put(player.getUniqueId(), new AfkSession(reason, now, AfkType.AUTO));
         statsManager.startSession(player, now, AfkType.AUTO);
 
-        if (plugin.getConfig().getBoolean("broadcast.on-afk", true)) {
+        if (plugin.getConfig().getBoolean("broadcast.on-afk", true) && !isSilent(player)) {
             String msg = Text.replace(Text.cfg(plugin, "messages.auto-afk-broadcast"),
                     "%player%", player.getName(), "%reason%", reason);
             Bukkit.broadcastMessage(msg);
@@ -133,7 +133,7 @@ public final class AfkManager {
         long duration = now - session.startedAt();
         statsManager.finishSession(player.getUniqueId(), now);
 
-        if (broadcast && plugin.getConfig().getBoolean("broadcast.on-return", true)) {
+        if (broadcast && plugin.getConfig().getBoolean("broadcast.on-return", true) && !isSilent(player)) {
             String msg = Text.replace(Text.cfg(plugin, "messages.return-broadcast"),
                     "%player%", player.getName(), "%duration%", Text.duration(duration));
             Bukkit.broadcastMessage(msg);
@@ -141,6 +141,10 @@ public final class AfkManager {
 
         deliverRemembered(player, session);
         return true;
+    }
+
+    private boolean isSilent(Player player) {
+        return player.hasPermission("menki.afk.silent");
     }
 
     private void deliverRemembered(Player player, AfkSession session) {
