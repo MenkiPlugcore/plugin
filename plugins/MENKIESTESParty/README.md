@@ -1,250 +1,101 @@
-# MENKIESTESParty v1.3.0
+# MENKIESTESParty v1.6.0
 
-Native modular Paper Party/Guild framework by CADERA. Designed for Paper 1.21.11 / Java 21, local YAML storage, and no required database.
+Modular Paper Party/Guild framework by **CADERA** for Paper 1.21.11 / Java 21.
 
-## v1.3.0 — Party Interaction Update
+MENKIESTESParty is designed as a standalone public plugin. A basic server can keep the lightweight local YAML setup, while larger installations can optionally use SQLite/MySQL and developer integrations.
 
-v1.3.0 adds interaction between Parties without tying the plugin to a specific server network, economy plugin, or database.
+## Core systems
 
-New systems:
-
-- Party Contracts
-- Diplomacy + Trust Score
-- Recruitment + Join Applications
-- Configurable rank capabilities for interaction actions
-- Dedicated `interactions.yml` storage
-- New PlaceholderAPI values
-
-All v1.3 modules are optional.
-
-## Party Contracts
-
-One Party can offer an objective to another Party. Built-in objective types:
-
-- `mining`
-- `hunter`
-- `farmer`
-
-Flow:
-
-1. Issuer creates a Contract.
-2. Target Party receives a PENDING proposal.
-3. A permitted rank accepts or denies it.
-4. After acceptance, activity from the target Party advances the Contract.
-5. Completion updates Contract statistics and Trust Score.
-
-Commands:
-
-```text
-/party contract
-/party contract info <id>
-/party contract create <party> <mining|hunter|farmer> <goal>
-/party contract accept <id>
-/party contract deny <id>
-/party contract cancel <id>
-/party contract abandon <id>
-```
-
-Direct alias: `/partycontract` or `/pcontract`.
-
-Contract protection includes configurable goal limits, proposal expiry, active deadline, per-pair cooldown, active/open limits, placed-block anti-abuse for mining, and automatic history cleanup.
-
-### Contract rewards
-
-Automatic Contract Party XP is intentionally `0` by default. This prevents two Parties or alt Parties from repeatedly creating Contracts just to generate free XP.
-
-Server owners can enable it:
-
-```yaml
-interaction:
-  contracts:
-    party-xp-reward: 0
-```
-
-By default Contract completion primarily affects Diplomacy Trust.
-
-## Diplomacy + Trust
-
-Relationships are symmetric between two Parties.
-
-Relations:
-
-- `NEUTRAL`
-- `ALLY`
-- `RIVAL`
-
-Trust Score ranges from `-100` to `100` and is stored separately from the relation label. Completing Contracts can increase Trust; abandoning or failing them can reduce it.
-
-Commands:
-
-```text
-/party diplomacy
-/party diplomacy status <party>
-/party diplomacy request <party> ally
-/party diplomacy accept <party>
-/party diplomacy deny <party>
-/party diplomacy neutral <party>
-/party diplomacy rival <party>
-```
-
-Alliance requires agreement. If both Parties send an Alliance request to each other, the second request completes the Alliance immediately. Neutral and Rival changes are direct actions.
-
-Direct alias: `/partydiplomacy`, `/pdiplomacy`, `/pdiplo`.
-
-## Recruitment + Join Applications
-
-Each Party has a recruitment mode:
-
-- `OPEN` — `/party apply <party>` joins immediately when a slot is available.
-- `APPLICATION` — creates an application that Owner/authorized ranks can review.
-- `CLOSED` — rejects new applications.
-
-Commands:
-
-```text
-/party browse [page]
-/party apply <party> [message]
-/party apply cancel <party>
-/party recruitment <open|application|closed>
-/party applications
-/party applications accept <player>
-/party applications deny <player>
-```
-
-Direct aliases:
-
-```text
-/partybrowse
-/partyapply
-/partyrecruitment
-/partyapplications
-```
-
-Applications expire automatically and a player can only have a configurable number of active applications. Accepting an application removes the player's other stale applications.
-
-Party War membership locks and Party member limits are respected by OPEN recruitment and application acceptance.
-
-## Configurable rank capabilities
-
-v1.3 adds server-configurable capabilities for interaction management. Owner always has all interaction capabilities as a lockout safeguard. Officer and Member capabilities are configurable.
-
-Default:
-
-```yaml
-rank-permissions:
-  enabled: true
-  officer:
-    - contracts.create
-    - contracts.respond
-    - diplomacy.manage
-    - recruitment.manage
-    - applications.manage
-  member: []
-```
-
-Wildcards are supported:
-
-```yaml
-rank-permissions:
-  officer:
-    - 'contracts.*'
-    - diplomacy.manage
-```
-
-Use `/party rankperms` or `/partyrankperms` to see the current role's interaction capabilities.
-
-This capability layer applies to v1.3 interaction actions. Existing core ownership safety such as Owner-only disband and Owner-only role changes remains unchanged.
-
-## Interaction overview
-
-```text
-/party interaction
-/partyinteraction
-```
-
-Shows active Contracts, completed Contract count, recruitment mode, pending applications, and quick command references.
-
-## Modular configuration
-
-```yaml
-modules:
-  projects: true
-  skill-tree: true
-  divisions: true
-  identity: true
-  contracts: true
-  diplomacy: true
-  applications: true
-```
-
-Disabling an interaction module does not disable the core Party system.
-
-## Storage
-
-v1.3 adds:
-
-```text
-plugins/MENKIESTESParty/interactions.yml
-```
-
-It contains Contract state/history, Diplomacy relations, Trust Score, Alliance requests, application queues, and interaction statistics.
-
-Existing data files remain unchanged:
-
-```text
-parties.yml
-wars.yml
-season.yml
-hall.yml
-```
-
-No database migration is required.
-
-## Progression systems from v1.2.x
-
-MENKIESTESParty still includes:
-
+- Party create/invite/roster/roles/home/chat
+- Party Level and shared progression
+- Weekly Quest + Party Relic
+- Daily Party Mission
 - Party Projects
 - Party Skill Tree
 - Party Divisions
 - Dynamic Party Identity
-- Progression GUI with pagination, confirmations and visual progress bars
-- Weekly Quest
-- Daily Party Mission
-- Party Relic
-- Party War
-- Party Season
+- Party Contracts
+- Diplomacy + Trust
+- Recruitment + Join Applications
+- Interaction GUI + Notification Inbox + Recent Activity
+- Party War + Season
+- Administration & Moderation tooling
+- Public developer API v1.0
 
-## PlaceholderAPI
+## Storage
 
-Existing `%mparty_*%` placeholders remain. v1.3 adds:
+Available backends:
 
 ```text
-%mparty_recruitment%
-%mparty_contracts_active%
-%mparty_contracts_completed%
-%mparty_applications_pending%
+YAML    - default, local, simplest
+SQLite  - optional local SQL database
+MySQL   - optional external SQL database
 ```
 
-## Upgrade from v1.2.2
+SQL is **not required**. YAML remains a first-class supported backend.
 
-1. Stop the server.
-2. Replace the old MENKIESTESParty JAR.
-3. Do **not** delete `plugins/MENKIESTESParty/`.
-4. Start the server normally.
+See [`STORAGE.md`](STORAGE.md).
 
-The v1.3 config migration merges missing defaults without resetting existing Party data. `interactions.yml` is created automatically.
+## Administration — v1.6.0
 
-## Requirements
+```text
+/partyadmin
+/party admin ...
+```
 
-- Paper 1.21.11
-- Java 21
-- PlaceholderAPI optional
-- GriefPrevention optional
-- No Skript required
-- No database required
-- No Vault required
+v1.6.0 adds an Admin Browser/Inspect GUI, force join/remove, owner transfer, display rename, reversible Party freeze, XP controls, conservative repair, Project/Contract reset, export/archive, archive-first disband and bounded staff audit history.
+
+High-impact actions use a two-stage confirmation flow.
+
+See [`ADMINISTRATION.md`](ADMINISTRATION.md).
+
+## Developer API
+
+The public API is registered through Bukkit `ServicesManager` and remains:
+
+```text
+MenkiPartyAPI.API_VERSION = 1.0
+```
+
+The API exposes immutable snapshots rather than Bukkit YAML internals, allowing storage internals to evolve without forcing consumer plugins to depend on the persistence layer.
+
+See:
+
+- [`API.md`](API.md)
+- [`API_COMPATIBILITY.md`](API_COMPATIBILITY.md)
+
+## Documentation
+
+Every MENKIESTESParty version must be documented in GitHub as part of the release process.
+
+Release documentation currently includes:
+
+- [`CHANGELOG.md`](CHANGELOG.md) — chronological version history
+- [`RELEASE_NOTES_v1.6.0.md`](RELEASE_NOTES_v1.6.0.md) — current release notes
+- [`ADMINISTRATION.md`](ADMINISTRATION.md) — admin/moderation wiki
+- [`STORAGE.md`](STORAGE.md) — storage/migration guide
+- [`API.md`](API.md) — public API guide
+- [`API_COMPATIBILITY.md`](API_COMPATIBILITY.md) — API compatibility policy
+- [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) — bundled dependency notices
+
+## Production defaults
+
+- Storage: YAML
+- SQL: optional
+- Administration: enabled for permitted staff only
+- Dangerous admin actions: confirmation required
+- Contract automatic Party XP: 0 unless configured
+- Folia: experimental only; not production-certified in v1.6.0
+- Public API: v1.0
+
+## Build
+
+```bash
+gradle clean build
+```
+
+The GitHub Actions release gate verifies Java 21 compilation/tests, the production JAR contents, MySQL integration, and Java 25 runtime compatibility of the Java-21-targeted artifact.
 
 ## License
 
-MENKIESTES SOFTWARE LICENSE v1.0 — MENKIESTES dibuat oleh CADERA. See repository `LICENSE`.
+MENKIESTESParty is part of the MENKIESTES software projects created by **CADERA**. See the repository license and third-party notices for applicable terms.
