@@ -1,0 +1,20 @@
+# MENKIESTESParty v2.0.1 GUI visual theme.
+# Visual-only. It does not change Party data, permissions, storage or API behavior.
+theme:
+  enabled: true
+
+  # Fill otherwise-empty top inventory slots so menus do not look like raw chests.
+  fill-empty-slots: true
+  filler-name: '&0'
+
+  palette:
+    primary: BLACK_STAINED_GLASS_PANE
+    accent: CYAN_STAINED_GLASS_PANE
+    secondary: PURPLE_STAINED_GLASS_PANE
+
+  main-header:
+    enabled: true
+    material: NETHER_STAR
+    name: '&b&lMENKIESTES &fPARTY'
+
+  watermark: '&8MENKIESTES UI &7• &fCADERA'

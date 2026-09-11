@@ -29,6 +29,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     private SeasonManager season;
     private RewardHallManager hall;
     private PartyManageGui partyGui;
+    private GuiThemeManager guiTheme;
     private boolean dirty;
 
     @Override public void onEnable() {
@@ -38,7 +39,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.schedulerCompat = new SchedulerCompat(this);
 
         if (!schedulerCompat.runtimeAllowed()) {
-            getLogger().severe("Folia detected. MENKIESTESParty v2.0.0 still blocks Folia by default because full region-thread safety is not certified yet.");
+            getLogger().severe("Folia detected. MENKIESTESParty v2.0.1 still blocks Folia by default because full region-thread safety is not certified yet.");
             getLogger().severe("Use compatibility.folia.experimental=true only for controlled testing. Core data was not loaded.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
@@ -85,6 +86,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         this.apiHardening = new ApiHardeningManager(this, parties, progression, interactions, storage, developerApi);
         this.partyGui = new PartyManageGui(this, parties);
         this.progressionGui = new ProgressionGuiV122(this, parties, progression);
+        this.guiTheme = new GuiThemeManager(this);
 
         PartyCommand executor = new PartyCommand(this, parties);
         for (String cmdName : new String[]{"party","pchat","partywar","partyseason"}) {
@@ -118,6 +120,9 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
         // v2 architecture listens to the existing post-state API event stream.
         // No additional polling scheduler is introduced.
         Bukkit.getPluginManager().registerEvents(architecture, this);
+        // Visual-only listener is deliberately registered last so existing GUI
+        // managers populate/action their functional slots before decoration.
+        Bukkit.getPluginManager().registerEvents(guiTheme, this);
 
         if (developerApi.enabled()) {
             Bukkit.getServicesManager().register(MenkiPartyAPI.class, developerApi, this, ServicePriority.Normal);
@@ -194,6 +199,7 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
                 + ". Administration: enabled=" + administration.enabled()
                 + ", safety=" + administrationStability.enabled()
                 + ", recovery-observability=" + administrationRecovery.enabled()
+                + ". GUI theme: enabled=" + guiTheme.enabled()
                 + ". Developer: api-v1=" + developerApi.enabled()
                 + ", api-v1-health=" + apiHardening.healthLabel()
                 + ", api-v2=" + developerApiV2.enabled()
@@ -355,12 +361,14 @@ public final class MENKIESTESPartyPlugin extends JavaPlugin {
     public SeasonManager season() { return season; }
     public RewardHallManager hall() { return hall; }
     public PartyManageGui partyGui() { return partyGui; }
+    public GuiThemeManager guiTheme() { return guiTheme; }
 
     public void reloadPluginConfig() {
         reloadConfig();
         if (messages != null) messages.reload();
         if (socialIdentity != null) socialIdentity.reload();
         if (architecture != null) architecture.reload();
+        if (guiTheme != null) guiTheme.reload();
         if (apiHardening != null) apiHardening.verifyCompatibility();
     }
 }

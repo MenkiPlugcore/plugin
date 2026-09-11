@@ -2,6 +2,28 @@
 
 All notable MENKIESTESParty changes are documented here. Releases remain standalone/public-plugin oriented and preserve the custom MENKIESTES/CADERA project licensing while respecting bundled third-party notices.
 
+## 2.0.1 - 2026-09-11
+
+GUI Visual Polish Patch.
+
+### Added
+
+- Global visual theme layer for MENKIESTESParty inventory GUIs.
+- Default black/cyan/purple stained-glass palette for consistent Party, Progression, Interaction, Inbox/Activity and Administration menus.
+- Decorative root Party header with Party/role/level/member and Social Identity context.
+- `gui-theme.yml` visual configuration and `GUI_THEME.md` documentation.
+- PDC-tagged decoration items and top-inventory movement protection.
+- Bukkit-free deterministic layout tests and v2.0.1 release-contract tests.
+
+### Compatibility / Performance
+
+- Functional buttons and mutation routing remain owned by the existing GUI managers; the theme fills only otherwise-empty slots.
+- No Party data path, Document Schema, storage backend protocol or network architecture is changed.
+- `MenkiPartyAPI.API_VERSION` remains `1.0`; `MenkiPartyAPIv2.API_VERSION` remains `2.0`.
+- No animation, GUI polling loop, per-tick UI scheduler, database query or external network request is added by the theme.
+- YAML remains the default backend; SQLite/MySQL remain optional.
+- Existing v2.0.0 architecture/storage/social/admin compatibility guarantees remain intact.
+
 ## 2.0.0 - 2026-09-10
 
 Major Architecture Release.

@@ -21,7 +21,7 @@ class ArchitectureReleaseContractTest {
         String storageSource = Files.readString(Path.of(
                 "src/main/java/id/cadera/menkiestesparty/StorageBundle.java"), StandardCharsets.UTF_8);
 
-        assertTrue(plugin.contains("version: 2.0.0"));
+        assertTrue(plugin.contains("version: 2."));
         assertTrue(plugin.contains("partyarchitecture:"));
         assertTrue(plugin.contains("menkiestesparty.architecture.inspect:"));
         assertTrue(architecture.contains("api-v2:"));

@@ -1,9 +1,9 @@
 name: MENKIESTESParty
-version: 2.0.0
+version: 2.0.1
 main: id.cadera.menkiestesparty.MENKIESTESPartyPlugin
 api-version: '1.21'
 author: CADERA
-description: Modular Paper Party/Guild framework with Architecture v2, dual public APIs, social Party profiles, hardened administration, optional storage, progression, interactions and Party War.
+description: Modular Paper Party/Guild framework with Architecture v2, dual public APIs, themed inventory UI, social Party profiles, hardened administration, optional storage, progression, interactions and Party War.
 softdepend: [PlaceholderAPI, GriefPrevention, Vault]
 commands:
   party:
