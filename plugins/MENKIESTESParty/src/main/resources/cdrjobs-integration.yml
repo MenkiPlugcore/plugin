@@ -1,0 +1,57 @@
+# MENKIESTESParty v2.1.0 — optional CdrJobs Public API v2 bridge.
+# MENKIESTESParty remains fully standalone when CdrJobs is absent.
+integration:
+  enabled: true
+  minimum-api-version: 2
+
+# When connected, accepted ProfessionActionEvent is authoritative for Daily and
+# Weekly profession activity. This prevents legacy raw Bukkit listeners from
+# counting the same action twice and inherits CdrJobs anti-exploit decisions.
+activity:
+  feed-weekly-quests: true
+  authoritative-weekly-quests: true
+  feed-daily-missions: true
+  authoritative-daily-missions: true
+  feed-party-projects: true
+
+profession-roster:
+  specialist-min-level: 50
+  specialist-min-mastery-tier: 0
+  cache-millis: 10000
+
+five-paths-convergence:
+  enabled: true
+  # With true, one member cannot fill multiple Five Paths slots by themself.
+  require-distinct-members: true
+  # Party-only Project progress bonus. No personal damage/economy modifier.
+  project-progress-bonus-percent: 10
+  cache-millis: 10000
+
+projects:
+  auto-register-defaults: true
+  defaults:
+    fivepaths_miner:
+      display-name: 'Runebound Expedition'
+      type: cdr_miner
+      goal: 2500
+      party-xp: 300
+    fivepaths_farmer:
+      display-name: 'Verdant Harvest'
+      type: cdr_farmer
+      goal: 1500
+      party-xp: 250
+    fivepaths_hunter:
+      display-name: 'Bloodfang Hunt'
+      type: cdr_hunter
+      goal: 500
+      party-xp: 350
+    fivepaths_lumberjack:
+      display-name: 'Ironbark Timber Drive'
+      type: cdr_lumberjack
+      goal: 1800
+      party-xp: 275
+    fivepaths_fisher:
+      display-name: 'Tidebound Expedition'
+      type: cdr_fisher
+      goal: 400
+      party-xp: 300

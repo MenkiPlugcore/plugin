@@ -30,11 +30,13 @@ public final class PartyListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent e) {
+        if (CdrJobsIntegrationManager.authoritativeWeekly(plugin)) return;
         if (parties.shouldTrackPlaced(e.getBlockPlaced().getType())) parties.trackPlacedMining(e.getBlockPlaced().getLocation());
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onBreak(BlockBreakEvent e) {
+        if (CdrJobsIntegrationManager.authoritativeWeekly(plugin)) return;
         Player p=e.getPlayer(); String party=parties.partyOf(p.getUniqueId()); if(party==null)return;
         Block b=e.getBlock(); Material type=b.getType();
         boolean placed = parties.shouldTrackPlaced(type) && parties.consumePlacedMining(b.getLocation());
@@ -56,6 +58,7 @@ public final class PartyListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onMobDeath(EntityDeathEvent e) {
+        if (CdrJobsIntegrationManager.authoritativeWeekly(plugin)) return;
         if(!(e.getEntity() instanceof Monster)) return;
         Player killer=e.getEntity().getKiller(); if(killer==null)return;
         String party=parties.partyOf(killer.getUniqueId()); if(party!=null) parties.addQuestProgress(party,"hunter",killer.getUniqueId(),1);
@@ -106,6 +109,10 @@ public final class PartyListener implements Listener {
                 p.sendMessage(Util.color("&eWeekly Quest &8| "+parties.questLine(party,"mining")));
                 p.sendMessage(Util.color("&eWeekly Quest &8| "+parties.questLine(party,"hunter")));
                 p.sendMessage(Util.color("&eWeekly Quest &8| "+parties.questLine(party,"farmer")));
+                if (CdrJobsIntegrationManager.integrationActive(plugin)) {
+                    p.sendMessage(Util.color("&eWeekly Quest &8| "+parties.questLine(party,"lumberjack")));
+                    p.sendMessage(Util.color("&eWeekly Quest &8| "+parties.questLine(party,"fisher")));
+                }
             }
         } else if(e.getRawSlot()==22) { p.closeInventory(); war.showStatus(p); }
     }

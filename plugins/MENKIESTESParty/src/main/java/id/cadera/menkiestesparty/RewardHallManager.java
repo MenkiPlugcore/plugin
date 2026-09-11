@@ -21,13 +21,18 @@ import org.bukkit.event.server.TabCompleteEvent;
 /**
  * v1.1 compatibility shell. Party Hall was removed and this component now owns
  * Daily Party Missions while keeping the old public methods binary-compatible.
+ *
+ * v2.1.0 can accept trusted profession activity from CdrJobs. When the bridge
+ * is authoritative, the legacy raw Bukkit listeners are suspended so one
+ * activity can never be counted twice.
  */
 public final class RewardHallManager implements Listener, CommandExecutor, TabCompleter {
     private final MENKIESTESPartyPlugin plugin;
     private final PartyService parties;
     private final StorageBundle db;
     private final Set<String> placedMining = new HashSet<>();
-    private static final List<String> TYPES = List.of("mining", "hunter", "farmer");
+    private static final List<String> LEGACY_TYPES = List.of("mining", "hunter", "farmer");
+    private static final List<String> FIVE_PATH_TYPES = List.of("mining", "hunter", "farmer", "lumberjack", "fisher");
 
     public RewardHallManager(MENKIESTESPartyPlugin plugin, PartyService parties, StorageBundle db) {
         this.plugin = plugin;
@@ -39,18 +44,23 @@ public final class RewardHallManager implements Listener, CommandExecutor, TabCo
             cmd.setExecutor(this);
             cmd.setTabCompleter(this);
         }
+
+        // ProgressionManager is initialized immediately before this compatibility
+        // component in MENKIESTESPartyPlugin#onEnable, so the optional bridge can
+        // be installed here without changing the core bootstrap order.
+        CdrJobsIntegrationManager.install(plugin, parties, plugin.progression(), this, db);
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent e) {
-        if (!enabled()) return;
+        if (!enabled() || CdrJobsIntegrationManager.authoritativeDaily(plugin)) return;
         Material m = e.getBlockPlaced().getType();
         if (parties.isMiningMaterial(m)) placedMining.add(locationKey(e.getBlockPlaced().getLocation()));
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onBreak(BlockBreakEvent e) {
-        if (!enabled()) return;
+        if (!enabled() || CdrJobsIntegrationManager.authoritativeDaily(plugin)) return;
         Player p = e.getPlayer();
         String party = parties.partyOf(p.getUniqueId());
         if (party == null) return;
@@ -65,7 +75,7 @@ public final class RewardHallManager implements Listener, CommandExecutor, TabCo
 
     @EventHandler
     public void onMobDeath(EntityDeathEvent e) {
-        if (!enabled()) return;
+        if (!enabled() || CdrJobsIntegrationManager.authoritativeDaily(plugin)) return;
         Player killer = e.getEntity().getKiller();
         if (killer == null || e.getEntity() instanceof Player) return;
         String party = parties.partyOf(killer.getUniqueId());
@@ -119,27 +129,42 @@ public final class RewardHallManager implements Listener, CommandExecutor, TabCo
         return plugin.getConfig().getBoolean("daily-missions.enabled", true);
     }
 
+    private List<String> activeTypes() {
+        return CdrJobsIntegrationManager.integrationActive(plugin) ? FIVE_PATH_TYPES : LEGACY_TYPES;
+    }
+
     private void ensureToday(String party) {
         String root = "parties." + party + ".daily";
         String today = LocalDate.now().toString();
         String stored = db.parties.getString(root + ".date");
         if (today.equals(stored)) return;
         db.parties.set(root + ".date", today);
-        for (String type : TYPES) {
+        for (String type : FIVE_PATH_TYPES) {
             db.parties.set(root + "." + type + ".progress", 0);
             db.parties.set(root + "." + type + ".completed", false);
         }
         plugin.saveDataSoon();
     }
 
+    /**
+     * Trusted path used only by CdrJobsIntegrationManager after CdrJobs has
+     * already accepted a ProfessionActionEvent through its anti-exploit rules.
+     */
+    public void addTrustedProgress(String party, String type, int amount) {
+        if (!enabled() || party == null || amount <= 0 || !FIVE_PATH_TYPES.contains(type)) return;
+        addProgress(party, type, amount);
+    }
+
     private void addProgress(String party, String type, int amount) {
+        if (amount <= 0 || !FIVE_PATH_TYPES.contains(type) || !parties.exists(party)) return;
         ensureToday(party);
         String root = "parties." + party + ".daily." + type;
         if (db.parties.getBoolean(root + ".completed", false)) return;
         int goal = goal(type);
-        int now = Math.min(goal, db.parties.getInt(root + ".progress", 0) + amount);
-        db.parties.set(root + ".progress", now);
-        if (now >= goal) {
+        long current = Math.max(0L, db.parties.getLong(root + ".progress", 0L));
+        long next = Math.min((long) goal, current + amount);
+        db.parties.set(root + ".progress", next);
+        if (next >= goal) {
             db.parties.set(root + ".completed", true);
             int xp = xp(type);
             parties.addRep(party, xp);
@@ -149,12 +174,24 @@ public final class RewardHallManager implements Listener, CommandExecutor, TabCo
     }
 
     private int goal(String type) {
-        int def = switch (type) { case "hunter" -> 30; case "farmer" -> 80; default -> 150; };
+        int def = switch (type) {
+            case "hunter" -> 30;
+            case "farmer" -> 80;
+            case "lumberjack" -> 120;
+            case "fisher" -> 25;
+            default -> 150;
+        };
         return Math.max(1, plugin.getConfig().getInt("daily-missions." + type + ".goal", def));
     }
 
     private int xp(String type) {
-        int def = switch (type) { case "hunter" -> 50; case "farmer" -> 35; default -> 40; };
+        int def = switch (type) {
+            case "hunter" -> 50;
+            case "farmer" -> 35;
+            case "lumberjack" -> 40;
+            case "fisher" -> 45;
+            default -> 40;
+        };
         return Math.max(0, plugin.getConfig().getInt("daily-missions." + type + ".party-xp", def));
     }
 
@@ -164,18 +201,29 @@ public final class RewardHallManager implements Listener, CommandExecutor, TabCo
         if (party == null) { msg(p, " &cKamu belum memiliki Party."); return; }
         ensureToday(party);
         p.sendMessage(Util.color("&b&lDAILY PARTY MISSION &8- &f" + parties.display(party)));
-        for (String type : TYPES) {
+        for (String type : activeTypes()) {
             String root = "parties." + party + ".daily." + type;
-            int progress = Math.min(goal(type), db.parties.getInt(root + ".progress", 0));
+            int progress = (int) Math.min(goal(type), Math.max(0L, db.parties.getLong(root + ".progress", 0L)));
             boolean done = db.parties.getBoolean(root + ".completed", false);
             String mark = done ? " &a✔" : "";
             p.sendMessage(Util.color("&7" + title(type) + ": &f" + progress + "/" + goal(type) + " &8| &b+" + xp(type) + " Party XP" + mark));
+        }
+        if (CdrJobsIntegrationManager.integrationActive(plugin)) {
+            p.sendMessage(Util.color("&8Sumber progress: CdrJobs accepted profession actions."));
+        } else {
+            p.sendMessage(Util.color("&8Sumber progress: MENKIESTESParty standalone fallback."));
         }
         p.sendMessage(Util.color("&8Reset otomatis setiap pergantian tanggal server."));
     }
 
     private String title(String type) {
-        return switch (type) { case "hunter" -> "Hunter"; case "farmer" -> "Farmer"; default -> "Mining"; };
+        return switch (type) {
+            case "hunter" -> "Hunter";
+            case "farmer" -> "Farmer";
+            case "lumberjack" -> "Lumberjack";
+            case "fisher" -> "Fisher";
+            default -> "Mining";
+        };
     }
 
     private boolean isMatureCrop(Block b) {
