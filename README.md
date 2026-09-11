@@ -2,7 +2,7 @@
 
 Koleksi plugin Minecraft custom buatan **MenkiPlugcore / MENKIESTES**.
 
-Repository ini menggunakan struktur monorepo: setiap plugin berada di folder terpisah dan dapat dibuild secara mandiri. Tujuannya supaya source code, riwayat versi, CI build, dan distribusi tetap rapi saat jumlah plugin bertambah.
+Repository ini menggunakan struktur monorepo untuk plugin yang masih dikelola bersama. Plugin yang sudah berkembang menjadi proyek mandiri dapat dipindahkan ke repository standalone agar source code, CI build, release, dan dokumentasinya lebih terisolasi.
 
 ## Plugin Catalog
 
@@ -10,7 +10,7 @@ Repository ini menggunakan struktur monorepo: setiap plugin berada di folder ter
 |---|---:|---|---:|---|
 | [MENKIAFK](plugins/MENKIAFK) | 1.1.0 Universal | Paper 1.21.11–26.2, Spigot 1.21.11 | 21+ | Aktif |
 | [MoonSignMenu](plugins/MoonSignMenu) | 1.3.0 | Paper 1.21.11 + Geyser/Floodgate + optional EssentialsX/AxTrade | 21+ | Aktif |
-| [MENKIESTESParty](plugins/MENKIESTESParty) | 1.0.0 Core | Paper 1.21.x / 1.21.11 | 21+ | Aktif |
+| [MENKIESTESParty](https://github.com/MenkiPlugcore/MENKIESTESParty) | 2.1.0 | Paper 1.21.11 | 21+ | Standalone |
 
 ## Struktur
 
@@ -18,31 +18,24 @@ Repository ini menggunakan struktur monorepo: setiap plugin berada di folder ter
 plugin/
 ├── plugins/
 │   ├── MENKIAFK/
-│   ├── MoonSignMenu/
-│   └── MENKIESTESParty/
-│       ├── src/
-│       ├── build.gradle.kts
-│       ├── settings.gradle.kts
-│       ├── README.md
-│       └── CHANGELOG.md
+│   └── MoonSignMenu/
 └── .github/workflows/
 ```
 
+MENKIESTESParty sekarang dikelola terpisah di:
+
+https://github.com/MenkiPlugcore/MENKIESTESParty
+
 ## Build
 
-Setiap plugin dapat dibuild dari folder masing-masing. Plugin Maven menggunakan `mvn clean package`, sedangkan MENKIESTESParty menggunakan Gradle:
-
-```bash
-cd plugins/MENKIESTESParty
-gradle clean build
-```
+Setiap plugin di repository ini dapat dibuild dari folder masing-masing sesuai build system-nya. MENKIESTESParty memiliki pipeline build dan release sendiri di repository standalone.
 
 GitHub Actions melakukan compile-check dan menghasilkan artifact JAR untuk plugin yang memiliki workflow.
 
 ## Distribusi
 
-Source repository ini disiapkan sebagai sumber resmi plugin MenkiPlugcore. Binary release dapat dipublikasikan melalui GitHub Releases dan/atau Modrinth tanpa menyimpan file hasil build ke dalam source tree.
+Source repository ini tetap menjadi sumber resmi untuk plugin yang tercantum di monorepo. MENKIESTESParty menggunakan repository standalone sebagai source dan release resminya.
 
 ## Lisensi
 
-Belum ada lisensi open-source yang diberikan untuk repository ini. Hak cipta tetap berada pada pemilik repository sampai lisensi eksplisit ditambahkan.
+Repository ini menggunakan **MENKIESTES SOFTWARE LICENSE v1.0**. Hak cipta source original MENKIESTES tetap milik **CADERA**, sementara komponen pihak ketiga tetap mengikuti lisensi masing-masing.
