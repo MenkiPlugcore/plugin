@@ -18,7 +18,7 @@ class GuiThemeReleaseContractTest {
         String plugin = resource("plugin.yml");
         String theme = resource("gui-theme.yml");
 
-        assertTrue(plugin.contains("version: 2.0.1"));
+        assertTrue(plugin.contains("version: 2.1.0"));
         assertTrue(plugin.contains("themed inventory UI"));
         assertTrue(theme.contains("fill-empty-slots: true"));
         assertTrue(theme.contains("primary: BLACK_STAINED_GLASS_PANE"));
