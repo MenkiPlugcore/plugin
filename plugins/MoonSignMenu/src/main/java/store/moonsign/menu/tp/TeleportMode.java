@@ -1,6 +1,0 @@
-package store.moonsign.menu.tp;
-
-public enum TeleportMode {
-    TO_TARGET,
-    TARGET_TO_REQUESTER
-}
