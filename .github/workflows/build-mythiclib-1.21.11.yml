@@ -1,0 +1,123 @@
+name: Build MythicLib 1.21.11
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout build host repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Show environment
+        run: |
+          java -version
+          mvn -version
+          git --version
+
+      - name: Install Spigot 1.21.11 remapped dependencies
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p "$RUNNER_TEMP/buildtools"
+          cd "$RUNNER_TEMP/buildtools"
+          curl -fL --retry 4 --retry-delay 5 \
+            -o BuildTools.jar \
+            https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar
+          java -jar BuildTools.jar --rev 1.21.11 --remapped
+
+      - name: Fetch MythicLib source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --depth 1 https://gitlab.com/phoenix-dvpmt/mythiclib.git mythiclib
+          cd mythiclib
+          git rev-parse HEAD
+          grep -n "<version>1.7.1-SNAPSHOT</version>" pom.xml
+          test -f mythiclib-v1_21_r7/src/main/java/io/lumine/mythic/lib/version/wrapper/VersionWrapper_1_21_R7.java
+
+      - name: Make a 1.21.11-only distribution
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+
+          pom = Path('mythiclib/mythiclib-dist/pom.xml')
+          ns_uri = 'http://maven.apache.org/POM/4.0.0'
+          ns = {'m': ns_uri}
+          ET.register_namespace('', ns_uri)
+
+          tree = ET.parse(pom)
+          root = tree.getroot()
+          deps = root.find('m:dependencies', ns)
+          if deps is None:
+              raise SystemExit('No <dependencies> section in mythiclib-dist/pom.xml')
+
+          removed = []
+          kept = []
+          for dep in list(deps):
+              aid = dep.find('m:artifactId', ns)
+              if aid is None or not aid.text:
+                  continue
+              name = aid.text.strip()
+              if name.startswith('mythiclib-v') and name != 'mythiclib-v1_21_r7':
+                  deps.remove(dep)
+                  removed.append(name)
+              elif name.startswith('mythiclib-v'):
+                  kept.append(name)
+
+          if kept != ['mythiclib-v1_21_r7']:
+              raise SystemExit(f'Unexpected wrapper dependency set after patch: {kept}')
+
+          tree.write(pom, encoding='UTF-8', xml_declaration=True)
+          print('Removed wrapper dependencies:', ', '.join(removed))
+          print('Kept wrapper dependency:', ', '.join(kept))
+          PY
+
+      - name: Build MythicLib for 1.21.11
+        shell: bash
+        working-directory: mythiclib
+        run: |
+          set -euxo pipefail
+          mvn -B -U -DskipTests clean package install \
+            -pl mythiclib-plugin,mythiclib-rpg,mythiclib-v1_21_r7,mythiclib-dist \
+            -am
+
+      - name: Validate and rename final JAR
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p output
+          JAR="mythiclib/target/MythicLib-1.7.1-SNAPSHOT.jar"
+          test -f "$JAR"
+          jar tf "$JAR" | grep -q '^plugin.yml$'
+          jar tf "$JAR" | grep -q 'io/lumine/mythic/lib/version/wrapper/VersionWrapper_1_21_R7.class'
+          unzip -p "$JAR" plugin.yml | sed -n '1,80p'
+          cp "$JAR" output/MythicLib-1.7.1-1.21.11-R7.jar
+          sha256sum output/MythicLib-1.7.1-1.21.11-R7.jar | tee output/SHA256.txt
+          ls -lh output/
+
+      - name: Upload MythicLib JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: MythicLib-1.7.1-1.21.11-R7
+          path: |
+            output/MythicLib-1.7.1-1.21.11-R7.jar
+            output/SHA256.txt
+          if-no-files-found: error
+          retention-days: 7
